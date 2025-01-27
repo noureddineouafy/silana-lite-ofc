@@ -18,14 +18,14 @@ global.info = {
  pairingNumber : '212605784394',
  figlet: 'silanalite', // create a start console display
  nomorwa : '212605784394',
- nameown : 'NOUREDDINE',
- nomerown : '212717457920',
- packname : 'sticker by ',
- author : 'SILANA AI',
- namebot : '乂 SILANA AI',
- wm : 'SILANA LITE.',
+ nameown : 'MOHAMED',
+ nomerown : '212669138178',
+ packname : 'MOHAMED',
+ author : 'MOHAMED',
+ namebot : '乂 MOHAMED',
+ wm : 'MOHAMED.',
  stickpack : 'Whatsapp',
- stickauth : 'SILANA LITE',
+ stickauth : 'MOHAMED',
  jid: '@s.whatsapp.net'
 }
 
@@ -52,10 +52,9 @@ global.media = {
 }
 // Social media
 global.url = {
- sig: 'https://instagram.com/noureddine_ouafy',
- sgh:  'https://instagram.com/noureddine_ouafy',
- sgc: 'https://whatsapp.com/channel/0029VaX4b6J7DAWqt3Hhu01A'
-}
+ sig: 'https://instagram.com/',
+ sgh:  'https://instagram.com/',
+ }
 // Donasi
 global.payment = {
  psaweria: 'https://saweria.co/mamad',
