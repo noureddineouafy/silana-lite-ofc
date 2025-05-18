@@ -13,7 +13,7 @@ const handler = async (m, { args, usedPrefix, command, conn }) => {
     lang = args[0] || 'ar';
     text = m.quoted.text;
   } else {
-    throw `ex: ${usedPrefix + command} ar Hello, how are you`;
+    throw `مثال:\n${usedPrefix + command} ar Hello, how are you`;
   }
 
   try {
@@ -22,22 +22,23 @@ const handler = async (m, { args, usedPrefix, command, conn }) => {
     const supportedLangs = Object.keys(await getLangList());
 
     if (!supportedLangs.includes(lang)) {
-      const errorMsg = `خطأ: اللغة "${lang}" غير مدعومة.\n\n*مثال:*\n.${command} ar Hello\n\n*اللغات المتوفرة:*\n` + 
+      const errorMsg = `❌ *خطأ:* اللغة "${lang}" غير مدعومة.\n\n*مثال:*\n.${command} ar Hello\n\n*اللغات المتوفرة:*\n` + 
         supportedLangs.map((v, i) => `${i + 1}. ${v}`).join('\n');
       return m.reply(errorMsg);
     }
 
     const translation = result[0].trim();
-    await m.reply(translation, null, m.mentionedJid ? { mentions: conn.parseMention(translation) } : {});
+    const replyText = `*تفضل هذه ترجمتك:*\n\n${translation}`;
+    await m.reply(replyText, null, m.mentionedJid ? { mentions: conn.parseMention(translation) } : {});
   } catch (e) {
-    await m.reply("حدث خطأ أثناء الترجمة.");
+    await m.reply("❌ حدث خطأ أثناء الترجمة.");
   }
 };
 
 handler.help = ['translate'];
 handler.tags = ['tools'];
 handler.command = /^translate|tr$/i;
-handler.limit = true 
+handler.limit = true;
 export default handler;
 
 async function getLangList() {
