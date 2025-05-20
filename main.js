@@ -1,4 +1,3 @@
-
 import { EventEmitter } from 'events';
 
 EventEmitter.setMaxListeners(0);
@@ -126,7 +125,7 @@ global.prefix = new RegExp('^[' + (opts['prefix'] || '‎!./#\\').replace(/[|\\{
 
 global.db = new Low(/https?:\/\//.test(opts['db'] || '') ? new cloudDBAdapter(opts['db']) : new JSONFile(`${opts._[0] ? opts._[0] + '_' : ''}database.json`))
 
-global.DATABASE = global.db // Backwards Compatibility
+global.DATABASE = global.db
 global.loadDatabase = async function loadDatabase() {
     if (global.db.READ) return new Promise((resolve) => setInterval(async function() {
         if (!global.db.READ) {
@@ -205,36 +204,45 @@ global.conn = makeWASocket(connectionOptions)
 conn.isInit = false
 
 if (!conn.authState.creds.registered) {
-
-    let phoneNumber
-    if (!conn.authState.creds.registered) {
-
-  if (process.argv[2]) { // Changed process.argv[1] to process.argv[2]
-            phoneNumber = process.argv[2];
-        } else if (!!global.pairingNumber) {
-            phoneNumber = global.pairingNumber.replace(/[^0-9]/g, '');
-            if (!Object.keys(PHONENUMBER_MCC).some(v => phoneNumber.startsWith(v))) {
-                console.log(chalk.bgBlack(chalk.redBright("Start with your country's WhatsApp code, Example: 212xxx")));
-                process.exit(0);
-            }
-        } else if (!global.pairingNumber) {
+    let phoneNumber = '';
+    
+    if (process.argv[2]) {
+        phoneNumber = process.argv[2];
+    } else if (!!global.pairingNumber) {
+        phoneNumber = global.pairingNumber.replace(/[^0-9]/g, '');
+        
+        if (!phoneNumber.match(/^\d+$/)) {
+            console.log(chalk.bgBlack(chalk.redBright("Start with your country's WhatsApp code, Example: 212xxx")));
             phoneNumber = await question(chalk.bgBlack(chalk.greenBright(`Please type your WhatsApp number : `)));
             phoneNumber = phoneNumber.replace(/[^0-9]/g, '');
-            
-            // Ask again when entering the wrong number
-            if (!Object.keys(PHONENUMBER_MCC).some(v => phoneNumber.startsWith(v))) {
-                console.log(chalk.bgBlack(chalk.redBright("Start with your country's WhatsApp code, Example: 212xxx")));
-                phoneNumber = await question(chalk.bgBlack(chalk.greenBright(`Please type your WhatsApp number : `)));
-                phoneNumber = phoneNumber.replace(/[^0-9]/g, '');
-                rl.close();
-            }
         }
+    } else {
+        phoneNumber = await question(chalk.bgBlack(chalk.greenBright(`Please type your WhatsApp number : `)));
+        phoneNumber = phoneNumber.replace(/[^0-9]/g, '');
+        
+        if (!phoneNumber.match(/^\d+$/)) {
+            console.log(chalk.bgBlack(chalk.redBright("Start with your country's WhatsApp code, Example: 212xxx")));
+            phoneNumber = await question(chalk.bgBlack(chalk.greenBright(`Please type your WhatsApp number : `)));
+            phoneNumber = phoneNumber.replace(/[^0-9]/g, '');
+        }
+    }
+    
+    if (phoneNumber.match(/^\d+$/)) {
         spinnies.add('spinner-1', { text: `Pairing Number: ${phoneNumber}`, color: "blue"});
         setTimeout(async () => {
-            let code = await conn.requestPairingCode(phoneNumber);
-            code = code?.match(/.{1,4}/g)?.join("-") || code;
-            spinnies.succeed('spinner-1', { text: `Your Pairing Code: ${code}`, successColor: "white"});
+            try {
+                let code = await conn.requestPairingCode(phoneNumber);
+                code = code?.match(/.{1,4}/g)?.join("-") || code;
+                spinnies.succeed('spinner-1', { text: `Your Pairing Code: ${code}`, successColor: "white"});
+            } catch (error) {
+                spinnies.fail('spinner-1', { text: `Failed to get pairing code: ${error.message}`, failColor: "red"});
+                console.log(chalk.bgBlack(chalk.redBright("Error getting pairing code. Make sure your number is valid.")));
+                process.exit(1);
+            }
         }, 3000);
+    } else {
+        console.log(chalk.bgBlack(chalk.redBright("Invalid phone number format. Exiting...")));
+        process.exit(1);
     }
 }
 
@@ -399,7 +407,6 @@ Object.freeze(global.reload);
 watch(pluginFolder, global.reload);
 await global.reloadHandler();
 
-/* QuickTest */
 async function _quickTest() {
     const test = await Promise.all([
         spawn('ffmpeg'),
@@ -471,40 +478,33 @@ function clearTmp() {
 setInterval(async () => {
     if (stopped === 'close' || !conn || !conn.user) return;
     if (setting.clearSesi === true) {
-    
-    await clearSesi(directory, 'creds.json');
-    
-    conn.reply(info.nomerown + '@s.whatsapp.net', 'Sessions has been cleared', null) >
+        await clearSesi(directory, 'creds.json');
+        conn.reply(info.nomerown + '@s.whatsapp.net', 'Sessions has been cleared', null);
         console.log(chalk.cyanBright(
             `\n╭───────────────────·»\n│\n` +
             `│  Sessions clear Successfull \n│\n` +
             `╰───❲ ${global.namebot} ❳\n`
         ));
-        }
-}, 60 * 120 * 1000); // every 4 hours 
+    }
+}, 60 * 120 * 1000);
 
 setInterval(async () => {
     if (stopped === 'close' || !conn || !conn.user) return;
     if (setting.clearTmp === true) {
-    await clearTmp();
-    conn.reply(info.nomerown + '@s.whatsapp.net', 'Tmp has been cleaned', null) >
+        await clearTmp();
+        conn.reply(info.nomerown + '@s.whatsapp.net', 'Tmp has been cleaned', null);
         console.log(chalk.cyanBright(
             `\n╭───────────────────·»\n│\n` +
             `│  Tmp clear Successfull \n│\n` +
             `╰───❲ ${global.namebot} ❳\n`
         ));
-        }
-}, 120 * 60 * 1000); //every 2 hours 
+    }
+}, 120 * 60 * 1000);
 
 setInterval(async () => {
     await func.closegc()
-}, 25000) // check every 25 seconds
-
+}, 25000)
 
 _quickTest().catch(console.error);
-
-/**
-@schedule reset limit
-**/
 
 (await import('./function/system/schedule.js')).schedule(db, conn)
