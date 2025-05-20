@@ -27,7 +27,7 @@
   },
   "license": "GPL-3.0-or-later",
   "dependencies": {
-    "@adiwajshing/baileys": "npm:@rulzz2nd/baileys-emde@7.2.1",
+    "@adiwajshing/baileys": "github:X-Tio/Baileys",
     "@adiwajshing/keyed-db": "^0.2.4",
     "@google/generative-ai": "*",
     "awesome-phonenumber": "^2.68.0",
