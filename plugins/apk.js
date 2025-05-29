@@ -1,9 +1,9 @@
-//follow my channel https://whatsapp.com/channel/0029VaX4b6J7DAWqt3Hhu01A
+// instagram.com/noureddine_ouafy
 
 let handler = async (m, { conn, usedPrefix, command, text }) => {
   if (!text)
     return m.reply(
-      `Enter the apk name \n\nExample : \n${usedPrefix + command} facebook lite \n\n\n المرجو كتابة الامر متبوع باسم التطبيق الذي تريد تحميله`,
+      `Enter the apk name \n\nExample:\n${usedPrefix + command} facebook lite\n\n\n المرجو كتابة الأمر متبوع باسم التطبيق الذي تريد تحميله`,
     );
 
   conn.apk = conn.apk ? conn.apk : {};
@@ -20,24 +20,38 @@ Name : ${data.appname}
 Developer : ${data.developer}
 `.trim();
 
-      await conn.sendMessage(m.chat, {
-        image: { url: data.img },
-        caption: caption,
-      }, { quoted: m });
+      await conn.sendMessage(
+        m.chat,
+        {
+          image: { url: data.img },
+          caption: caption,
+        },
+        { quoted: m },
+      );
 
       let dl = await conn.getFile(data.link);
       conn.sendMessage(
         m.chat,
-        { document: dl.data, fileName: data.appname, mimetype: dl.mime },
+        {
+          document: dl.data,
+          fileName: data.appname + ".apk",
+          mimetype: dl.mime,
+        },
         { quoted: m },
       );
     } catch (e) {
-      throw e;
+      console.error(e);
+      m.reply("An error occurred while downloading the APK.");
     } finally {
       dt.download = false;
     }
   } else {
     let data = await aptoide.search(text);
+
+    if (!data || data.length === 0) {
+      return m.reply("No results found for your search.");
+    }
+
     let caption = data
       .map((v, i) => {
         return `
@@ -49,51 +63,66 @@ ${i + 1}. ${v.name}
 `.trim();
       })
       .join("\n\n");
-    let header = `_Please download by typing, *${usedPrefix + command} 1*_\n\n\n قم بالاشارة لهذه الرسالة و الرد بكتابة الامر متبوع برقم التطبيق الذي تود تحميله مثال : \n\n *.apk 1* \n\n`;
+
+    let header = `_Please download by typing *${usedPrefix + command} 1*_\n\n\nقم بالإشارة لهذه الرسالة والرد بكتابة الأمر متبوع برقم التطبيق الذي تود تحميله، مثال:\n\n*.apk 1*\n\n`;
     m.reply(header + caption);
+
     conn.apk[m.sender] = {
       download: false,
       data: data,
       time: setTimeout(() => {
         delete conn.apk[m.sender];
-      }, 3600000),
+      }, 3600000), // ساعة واحدة
     };
   }
 };
+
 handler.help = ["apk"];
 handler.tags = ["downloader"];
 handler.command = /^(apk)$/i;
-handler.limit = true 
+handler.limit = true;
+
 export default handler;
 
 const aptoide = {
   search: async function (args) {
     let res = await global.fetch(
-      `https://ws75.aptoide.com/api/7/apps/search?query=${args}&limit=1000`,
+      `https://ws75.aptoide.com/api/7/apps/search?query=${encodeURIComponent(args)}&limit=1000`,
     );
-    let ress = {};
     res = await res.json();
-    ress = res.datalist.list.map((v) => {
+
+    if (!res.datalist || !res.datalist.list || res.datalist.list.length === 0) {
+      return [];
+    }
+
+    return res.datalist.list.map((v) => {
       return {
         name: v.name,
         size: v.size,
-        version: v.file.vername,
+        version: v.file?.vername || 'N/A',
         id: v.package,
-        download: v.stats.downloads,
+        download: v.stats?.downloads || 0,
       };
     });
-    return ress;
   },
+
   download: async function (id) {
     let res = await global.fetch(
-      `https://ws75.aptoide.com/api/7/apps/search?query=${id}&limit=1`,
+      `https://ws75.aptoide.com/api/7/apps/search?query=${encodeURIComponent(id)}&limit=1`,
     );
     res = await res.json();
+
+    if (!res.datalist || !res.datalist.list || res.datalist.list.length === 0) {
+      throw new Error("Application not found.");
+    }
+
+    const app = res.datalist.list[0];
+
     return {
-      img: res.datalist.list[0].icon,
-      developer: res.datalist.list[0].store.name,
-      appname: res.datalist.list[0].name,
-      link: res.datalist.list[0].file.path,
+      img: app.icon,
+      developer: app.store?.name || 'Unknown',
+      appname: app.name,
+      link: app.file?.path,
     };
   },
 };
