@@ -1,79 +1,78 @@
+// instagram.com/noureddine_ouafy
+
 import axios from 'axios';
 
-function randomNumber() {
-  let randomNumber = Math.floor(Math.random() * 1000000);
-  return randomNumber.toString().padStart(6, '0');
-}
-
-async function upscale(buffer) {
-  const blob = new Blob([buffer], { type: 'image/png' });
-  let filename = randomNumber() + '.png';
-  let formData = new FormData();
-  formData.append('image', {});
-  formData.append('image', blob, filename);
-
-  let { data } = await axios.post('https://api.imggen.ai/guest-upload', formData, {
-    headers: {
-      "content-type": "multipart/form-data",
-      origin: "https://imggen.ai",
-      referer: "https://imggen.ai/",
-      "user-agent": "Mozilla/5.0"
-    }
-  });
-
-  let result = await axios.post('https://api.imggen.ai/guest-upscale-image', {
-    image: {
-      "url": "https://api.imggen.ai" + data.image.url,
-      "name": data.image.name,
-      "original_name": data.image.original_name,
-      "folder_name": data.image.folder_name,
-      "extname": data.image.extname
-    }
-  }, {
-    headers: {
-      "content-type": "application/json",
-      origin: "https://imggen.ai",
-      referer: "https://imggen.ai/",
-      "user-agent": "Mozilla/5.0"
-    }
-  });
-
-  return `https://api.imggen.ai${result.data.upscaled_image}`;
-}
-
 let handler = async (m, { conn }) => {
-  try {
-    await m.react('⌛');
+  let mediaMessage = null;
 
-    let q = m.quoted ? m.quoted : m;
-    let mime = (q.msg || q).mimetype || '';
-    
-    if (!mime.startsWith('image/')) {
-      throw 'Please send an image with caption *hd/remini* or reply to an image!';
+  // ✅ إذا كانت صورة مرسلة مباشرة
+  if (m.mimetype?.startsWith('image')) {
+    mediaMessage = m;
+  }
+  // ✅ إذا كانت صورة مقتبسة (رد على صورة)
+  else if (m.quoted?.mimetype?.startsWith('image')) {
+    mediaMessage = m.quoted;
+  }
+  // ❌ إن لم تكن صورة في أي من الحالتين
+  else {
+    return m.reply(`❗ أرسل صورة أو قم بالرد على صورة ثم اكتب *.hd*`);
+  }
+
+  try {
+    await m.reply('🔄 المرجو الانتظار قليلا لا تنسى ان تتابع \ninstagram.com/noureddine_ouafy');
+
+    // تحميل الصورة
+    const buffer = await mediaMessage.download();
+    if (!buffer || buffer.length === 0) {
+      return m.reply('❌ فشل تحميل الصورة. جرب مجددًا.');
     }
 
-    let media = await q.download();
-    if (!media) throw 'Failed to download image.';
+    // رفع الصورة إلى Imgbb
+    const uploadedUrl = await uploadToImgbb(buffer);
+    if (!uploadedUrl) return m.reply('❌ فشل في رفع الصورة مؤقتاً.');
 
-    let upscaledUrl = await upscale(media);
-    if (!upscaledUrl) throw 'Failed to upscale image.';
+    // تحسين الجودة
+    const apiUrl = `https://nirkyy-dev.hf.space/api/v1/ai-upscale?url=${encodeURIComponent(uploadedUrl)}&scale=4`;
 
-    await m.react('✅');
+    // إرسال الصورة النهائية
+    await conn.sendFile(m.chat, apiUrl, 'hd.jpg', '✅ تم تحسين جودة الصورة بنجاح', m);
 
-    await conn.sendMessage(m.chat, {
-      image: { url: upscaledUrl },
-      caption: `*Done*`
-    }, { quoted: m });
-
-  } catch (error) {
-    await m.react('❌');
-    await conn.reply(m.chat, `❌ *Error:* ${error.message || error}`, m);
+  } catch (e) {
+    console.error('❌ خطأ في .hd:', e);
+    await m.reply(`❌ حدث خطأ أثناء المعالجة:\n${e.message}`);
   }
 };
 
-handler.help = ['remini', 'hd'];
+handler.help = ['hd','remini'];
 handler.tags = ['tools'];
-handler.command = /^(remini|hd)$/i;
+handler.command = /^hd|remini$/i;
 handler.limit = true;
 
 export default handler;
+
+// ------------------------
+// 📦 دالة رفع إلى Imgbb
+// ------------------------
+
+const uploadToImgbb = async (buffer) => {
+  try {
+    const bytes = Array.from(new Uint8Array(buffer));
+    const endpoint = "https://nirkyy-dev.hf.space/api/v1/toimgbb";
+
+    const response = await axios.post(endpoint, {
+      file: { data: bytes }
+    }, {
+      headers: { "Content-Type": "application/json" }
+    });
+
+    if (response.data?.data?.url) {
+      return response.data.data.url;
+    } else {
+      throw new Error('⚠️ الرد من API غير صالح.');
+    }
+  } catch (error) {
+    const errMsg = error.response?.data || error.message;
+    console.error("❌ فشل رفع الصورة:", errMsg);
+    throw new Error('❌ فشل رفع الصورة إلى الخادم.');
+  }
+};
