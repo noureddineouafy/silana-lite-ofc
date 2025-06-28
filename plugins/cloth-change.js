@@ -1,5 +1,10 @@
-// @noureddine_ouafy
+// noureddine_ouafy
 // scrape from channel wha of Tio
+/** 
+@skrep kelot baju🐦
+@elol sendir aja benerin
+@wm garena
+*/
 import { FormData, Blob } from 'formdata-node';
 import { fileTypeFromBuffer } from 'file-type';
 import fetch from 'node-fetch';
