@@ -1,6 +1,6 @@
-# Silana Lite - Official Repository
+# also bot - Official Repository
 
-Welcome to the official repository of **Silana Lite**, a WhatsApp bot built using `Baileys`, featuring many advanced capabilities.
+Welcome to the official repository of **also bot**, a WhatsApp bot built using `Baileys`, featuring many advanced capabilities.
 
 ## 📌 About Me
  (Im not a developper and I didn't learn any programming languages , i know just copy and past 🤣🤣🙏❤️♥️)
