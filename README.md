@@ -5,7 +5,7 @@ Welcome to the official repository of **Silana Lite**, a WhatsApp bot built usin
 ## 📌 About Me
  (Im not a developper and I didn't learn any programming languages , i know just copy and past 🤣🤣🙏❤️♥️)
 👤 **Name:** AHMED ALSOLTAN  
-📌 **GitHub:** [ALSOLTAN AHMED](https://github.com/noureddineouafy)  
+📌 **GitHub:** [Alsoltan ahmed1](https://github.com/Alsoltanahmed1)  
 
 ## 📺 My Channels and Platforms
 
