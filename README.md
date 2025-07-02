@@ -4,21 +4,16 @@ Welcome to the official repository of **Silana Lite**, a WhatsApp bot built usin
 
 ## 📌 About Me
  (Im not a developper and I didn't learn any programming languages , i know just copy and past 🤣🤣🙏❤️♥️)
-👤 **Name:** Noureddine  
-📌 **GitHub:** [noureddineouafy](https://github.com/noureddineouafy)  
-📌 **Instagram:** [@noureddine_ouafy](https://instagram.com/noureddine_ouafy)  
-📌 **Facebook:** [My Facebook Profile](https://www.facebook.com/profile.php?id=100063533185520)  
+👤 **Name:** AHMED ALSOLTAN  
+📌 **GitHub:** [ALSOLTAN AHMED](https://github.com/noureddineouafy)  
 
 ## 📺 My Channels and Platforms
 
 📢 **My YouTube Channel:**  
-[Click here](https://youtube.com/@noureddineouafy2?si=rqfc1sb_YxOEYufE) to watch my videos on bot development and programming projects.  
+[Click here](https://www.youtube.com/@alsoltan_1) to watch my videos on bot development and programming projects.  
 
 📢 **My WhatsApp Channel:**  
-[Join here](https://whatsapp.com/channel/0029VaX4b6J7DAWqt3Hhu01A) to stay updated on the latest news about my projects.  
-
-📢 **My Backup WhatsApp Channel:**  
-[Join here](https://whatsapp.com/channel/0029Vaz5bJz3mFY2ccGBev1n) as a backup channel in case any issues arise with the main one.  
+[Join here](https://whatsapp.com/channel/0029Vb2NcXLLNSZyNkzrMu16) to stay updated on the latest news about my projects.  
 
 ## 🚀 About the Project
 
