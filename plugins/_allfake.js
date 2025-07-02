@@ -41,8 +41,8 @@ handler.all = async function (m) {
     global.kontak2 = [
       [
         owner[0],
-        await conn.getName(owner[0] + "212717457920@s.whatsapp.net"),
-        "SILANA AI",
+        await conn.getName(owner[0] + "201140627942@s.whatsapp.net"),
+        "also AI",
         "https://whatsapp.com",
         true,
       ],
@@ -90,7 +90,7 @@ handler.all = async function (m) {
         forwardedNewsletterMessageInfo: {
           newsletterJid: "120363285847738492@newsletter",
           serverMessageId: 103,
-          newsletterName: ` SILANA LITE AI    |   هيا نحو النجاح 🧑‍🏫 `,
+          newsletterName: ` also bot AI    |   هيا نحو النجاح 🧑‍🏫 `,
         },
         externalAdReply: {
           showAdAttribution: true,
@@ -98,7 +98,7 @@ handler.all = async function (m) {
           body: ucapan(),
           previewType: "VIDEO",
           thumbnailUrl: logo,
-          sourceUrl: "https://instagram.com/noureddine_ouafy",
+          sourceUrl: "https://www.youtube.com/@alsoltan_1",
         },
       },
     };
