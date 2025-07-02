@@ -1,7 +1,7 @@
 {
-  "name": "silanalite",
+  "name": "also bot",
   "version": "1.0.0",
-  "description": "Silana-lite",
+  "description": "Also_bot",
   "main": "index.js",
   "type": "module",
   "directories": {
