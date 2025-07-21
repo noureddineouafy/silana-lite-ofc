@@ -29,8 +29,8 @@ let handler = async (m, { text, command, conn }) => {
   }
 }
 
-handler.command = ['tiktokdlr']
-handler.help = ['tiktokdlr']
+handler.command = ['tiktok']
+handler.help = ['tiktok']
 handler.tags = ['downloader']
 handler.limit = true 
 export default handler
