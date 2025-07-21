@@ -319,7 +319,7 @@ global.reloadHandler = async function(restatConn) {
         conn.ev.off('connection.update', conn.connectionUpdate)
         conn.ev.off('creds.update', conn.credsUpdate)
     }
-    conn.welcome = 'مرحـــــــــبا\n\n @subject, @user\n'
+    conn.welcome = 'مرحبا بك في أقوى مجموعة لبوتات الواتساب الرجاء قراءة قوانين المجموعة حتى لا يتم طردك  ، سيلانا اول بوت واتساب في الوطن العربي \n\n welcome to the groupe please read the rules of the group\n\n\n @subject, @user\n'
     conn.bye = '\n  مع السلامة  اتمنى ألا تعود الى هـــــــــنا \n@user 👋'
     conn.spromote = '@user *يرقي* إلى المشرف '
     conn.sdemote = '@user *خفض الرتبة* من المشرف'
