@@ -27,7 +27,7 @@
   },
   "license": "GPL-3.0-or-later",
   "dependencies": {
-    "@adiwajshing/baileys": "github:X-Tio/Baileys",
+    "@adiwajshing/baileys": "npm:naruyaizumi@26.0.2",
     "@adiwajshing/keyed-db": "^0.2.4",
     "@google/generative-ai": "*",
     "awesome-phonenumber": "^2.68.0",
@@ -61,6 +61,7 @@
     "wa-sticker-formatter": "^4.3.2",
     "ws": "^8.14.2",
     "xml2js": "*",
+    "node-cache": "*",
     "@google/generative-ai": "*",
     "yargs": "^17.7.1",
     "yt-search": "^2.10.4"
