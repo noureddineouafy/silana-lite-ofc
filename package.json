@@ -61,6 +61,7 @@
     "wa-sticker-formatter": "^4.3.2",
     "ws": "^8.14.2",
     "xml2js": "*",
+    "crypto-js": "*",
     "node-cache": "*",
     "@google/generative-ai": "*",
     "yargs": "^17.7.1",
