@@ -1,78 +1,52 @@
-// instagram.com/noureddine_ouafy
+// @noureddine_ouafy
 
-import axios from 'axios';
+import axios from 'axios'
+import FormData from 'form-data'
 
-let handler = async (m, { conn }) => {
-  let mediaMessage = null;
+let handler = async (m, { conn, args }) => {
+  const q = m.quoted ? m.quoted : m
+  const mime = (q.msg || q).mimetype || ''
+  
+  if (!mime.startsWith('image/')) {
+    return m.reply('Please reply to an image.')
+  }
 
-  // ✅ إذا كانت صورة مرسلة مباشرة
-  if (m.mimetype?.startsWith('image')) {
-    mediaMessage = m;
-  }
-  // ✅ إذا كانت صورة مقتبسة (رد على صورة)
-  else if (m.quoted?.mimetype?.startsWith('image')) {
-    mediaMessage = m.quoted;
-  }
-  // ❌ إن لم تكن صورة في أي من الحالتين
-  else {
-    return m.reply(`❗ أرسل صورة أو قم بالرد على صورة ثم اكتب *.hd*`);
-  }
+  m.reply('Please wait while your image is being enhanced...')
+
+  const media = await q.download()
 
   try {
-    await m.reply('🔄 المرجو الانتظار قليلا لا تنسى ان تتابع \ninstagram.com/noureddine_ouafy');
+    let form = new FormData()
+    form.append('image', media, {
+      filename: 'image.png',
+      contentType: 'image/png'
+    })
+    form.append('user_id', '')
+    form.append('is_public', 'false')
 
-    // تحميل الصورة
-    const buffer = await mediaMessage.download();
-    if (!buffer || buffer.length === 0) {
-      return m.reply('❌ فشل تحميل الصورة. جرب مجددًا.');
-    }
+    const { data } = await axios.post('https://picupscaler.com/api/generate/handle', form, {
+      headers: {
+        ...form.getHeaders(),
+        Origin: 'https://picupscaler.com',
+        Referer: 'https://picupscaler.com/',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36'
+      }
+    })
 
-    // رفع الصورة إلى Imgbb
-    const uploadedUrl = await uploadToImgbb(buffer);
-    if (!uploadedUrl) return m.reply('❌ فشل في رفع الصورة مؤقتاً.');
+    if (!data?.url) return m.reply('Failed to retrieve the enhanced image.')
 
-    // تحسين الجودة
-    const apiUrl = `https://nirkyy-dev.hf.space/api/v1/ai-upscale?url=${encodeURIComponent(uploadedUrl)}&scale=4`;
-
-    // إرسال الصورة النهائية
-    await conn.sendFile(m.chat, apiUrl, 'hd.jpg', '✅ تم تحسين جودة الصورة بنجاح', m);
-
+    await conn.sendMessage(m.chat, { 
+      image: { url: data.url }, 
+      caption: `✅ Image enhanced successfully!` 
+    }, { quoted: m })
+    
   } catch (e) {
-    console.error('❌ خطأ في .hd:', e);
-    await m.reply(`❌ حدث خطأ أثناء المعالجة:\n${e.message}`);
+    m.reply('Error: ' + e.message)
   }
-};
+}
 
-handler.help = ['hd','remini'];
-handler.tags = ['tools'];
-handler.command = /^hd|remini$/i;
-handler.limit = true;
-
-export default handler;
-
-// ------------------------
-// 📦 دالة رفع إلى Imgbb
-// ------------------------
-
-const uploadToImgbb = async (buffer) => {
-  try {
-    const bytes = Array.from(new Uint8Array(buffer));
-    const endpoint = "https://nirkyy-dev.hf.space/api/v1/toimgbb";
-
-    const response = await axios.post(endpoint, {
-      file: { data: bytes }
-    }, {
-      headers: { "Content-Type": "application/json" }
-    });
-
-    if (response.data?.data?.url) {
-      return response.data.data.url;
-    } else {
-      throw new Error('⚠️ الرد من API غير صالح.');
-    }
-  } catch (error) {
-    const errMsg = error.response?.data || error.message;
-    console.error("❌ فشل رفع الصورة:", errMsg);
-    throw new Error('❌ فشل رفع الصورة إلى الخادم.');
-  }
-};
+handler.help = ['remini']
+handler.command = ['remini']
+handler.tags = ['tools']
+handler.limit = true
+export default handler
