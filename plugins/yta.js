@@ -1,75 +1,59 @@
-// Instagram: noureddine_ouafy
-// scrape by haan
-import axios from 'axios'
+import CryptoJS from 'crypto-js'
 
-function ytid(url) {
-  let ID = ''
-  url = url.replace(/(>|<)/gi, '').split(/(vi\/|v=|\/v\/|youtu\.be\/|\/embed\/)/)
-  if (url[2] !== undefined) {
-    ID = url[2].split(/[^0-9a-z_\-]/i)
-    ID = ID[0]
-  } else {
-    ID = url
+// MP3 Downloader Utility
+const mp3dl = {
+  // Function to generate a secure token
+  generateToken: () => {
+    let payload = JSON.stringify({ timestamp: Date.now() })
+    let key = 'dyhQjAtqAyTIf3PdsKcJ6nMX1suz8ksZ'
+    return CryptoJS.AES.encrypt(payload, key).toString()
+  },
+
+  // Function to download audio from YouTube
+  download: async youtubeUrl => {
+    let json = await fetch('https://ds1.ezsrv.net/api/convert', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        url: youtubeUrl,
+        quality: 128, // Audio quality in kbps
+        trim: false,  // No trimming
+        startT: 0,    // Start time
+        endT: 0,      // End time
+        token: mp3dl.generateToken()
+      })
+    }).then(res => res.json())
+    return json
   }
-  return ID
 }
 
-async function ytdl(videoId, targetQuality = 320) {
+let handler = async (m, { conn, args }) => {
   try {
-    const response = await axios.get('https://c01-h01.cdnframe.com/api/v4/info/' + videoId)
-    const data = response.data
-
-    const audioFormats = data.formats?.audio?.mp3 || []
-    const selected = audioFormats.find(format => format.quality === targetQuality)
-
-    if (!selected) {
-      return { error: `❌ لم يتم العثور على الجودة المطلوبة: ${targetQuality}` }
+    if (!args[0]) {
+      return m.reply(
+        'Please provide a YouTube link.\n\n*Example:* .yta https://youtube.com/watch?v=7xo0Lubd3-U'
+      )
     }
 
-    const convertResponse = await axios.post('https://c01-h01.cdnframe.com/api/v4/convert', {
-      token: selected.token
-    })
+    let { url, title, status } = await mp3dl.download(args[0])
 
-    const convertData = convertResponse.data
+    await conn.sendMessage(
+      m.chat,
+      {
+        document: { url },
+        fileName: `${title}.mp3`,
+        mimetype: 'audio/mpeg'
+      },
+      { quoted: m }
+    )
 
-    if (!convertData.id) {
-      return { error: "❌ لم يتم الحصول على المعرف للتحويل." }
-    }
-
-    const statusResponse = await axios.get('https://c01-h01.cdnframe.com/api/v4/status/' + convertData.id)
-    const statusData = statusResponse.data
-
-    return {
-      title: data.title,
-      quality: targetQuality,
-      downloadUrl: statusData.download || null,
-    }
-
-  } catch (error) {
-    return { error: error.message }
+  } catch (e) {
+    m.reply(e.message)
   }
-}
-
-let handler = async (m, { conn, args, usedPrefix, command }) => {
-  let url = args[0]
-  if (!url) return m.reply(`📌 من فضلك أرسل رابط اليوتيوب.\n\n📥 مثال:\n${usedPrefix + command} https://youtube.com/watch?v=7xo0Lubd3-U`)
-  
-  let id = ytid(url)
-  let result = await ytdl(id, 128)
-
-  if (result.error) return m.reply(`❌ خطأ: ${result.error}`)
-  if (!result.downloadUrl) return m.reply(`❌ لم يتم العثور على رابط التحميل.`)
-
-  await conn.sendMessage(m.chat, {
-    audio: { url: result.downloadUrl.toString() },
-    mimetype: 'audio/mp4',
-    ptt: false
-  }, { quoted: m })
 }
 
 handler.help = ['yta']
-handler.tags = ['downloader']
 handler.command = ['yta']
+handler.tags = ['downloader']
 handler.limit = true
-
 export default handler
