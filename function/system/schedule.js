@@ -1,17 +1,15 @@
 import cron from "node-cron";
 
 async function delay(ms) {
-                return new Promise((resolve, reject) => setTimeout(resolve, ms)
-     ) }
-     
+    return new Promise((resolve, reject) => setTimeout(resolve, ms));
+}
 
 export async function schedule(db, conn) {
-    let bot = db.data.settings[conn.user.jid]
+    // The problematic line has been removed.
 
     cron.schedule('0 0 0 * * *', async () => { // schedule to run at 12:00 AM every day
         let data = Object.keys(db.data.users);
         let grup = Object.keys(db.data.chats).filter(v => v.endsWith('@g.us'));
-
         let user = db.data.users;
 
         for (let usr of data) {
@@ -22,7 +20,7 @@ export async function schedule(db, conn) {
 
         for (let gc of grup) {
             await conn.reply(gc, '```The system has reset the limit of all users who have a value below 7```', null);
-            await delay(5000)
+            await delay(5000);
         }
     }, {
         scheduled: true,
