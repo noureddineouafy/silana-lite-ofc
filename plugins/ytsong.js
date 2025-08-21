@@ -1,5 +1,7 @@
-import axios from "axios";
+//noureddine ouafy 
+//plugin from Terakomari_-_MD script 
 
+import axios from "axios";
 const ytiz = {
   info: async (url) => {
     const { data } = await axios.post(
