@@ -1221,12 +1221,12 @@ ${global.namebot}
                     m.reply('Ngecit -_-') // Hehehe
                 else
                     m.exp += xp
-                if (!isPrems && plugin.limit && global.db.data.users[m.sender].limit < plugin.limit * 7) {
+                /*if (!isPrems && plugin.limit && global.db.data.users[m.sender].limit < plugin.limit * 7) {
                     this.reply(m.chat, `Your limit has reached the limit\n\n•••••••••••••••••••\n\nآسفة لقد وصلتَ للحد الأدنى 🙂 
 
 البوت مبرمج على أن يُلَبِّي لك *10* طلبات في اليوم ، ثم يتوجب عليك أنذاك أن تنتظر ل 24 ساعة حتى تستفيذ من *10* أخريات .. وهكذا ... لذا دائما اشتغل بالبوت عندما تحتاجه فقط حتى لا تخسر الفرص ، \n\n*أراك غــــذا ان شــاء اللــــــــه*`, m)
                     continue // Limit habis
-                }
+                }*/
                 if (plugin.level > _user.level) {
                     this.reply(m.chat, `.المستوى المطلوب ${plugin.level} لاستخدام هذا الأمر\n*المستوى الخاص بك:* ${_user.level}`, m)
                     continue // If the level has not been reached
@@ -1257,10 +1257,10 @@ ${global.namebot}
                 }
                 try {
                     await plugin.call(this, m, extra)
-                    if (!isPrems) {
+                    /*if (!isPrems) {
                         m.limit = m.limit || plugin.limit || false
                         if (plugin.limit) return m.reply(`🔖 تم استخدام الحد: ${m.limit * 1}\nمتبقي: ${global.db.data.users[m.sender].limit - 1}`)
-                        }
+                        }*/
                 } catch (e) {
                     // Error occured
                     m.error = e
