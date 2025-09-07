@@ -1,63 +1,35 @@
-import axios from 'axios';
+// instagram.com/noureddine_ouafy
+import axios from "axios";
 
-/**
- * Convert image buffer to a text prompt using an AI service.
- * @param {Buffer} buffer - The image buffer.
- * @returns {Promise<Object>} - The AI-generated prompt.
- */
-async function imageToPrompt(buffer) {
-  const image64 = `data:image/jpeg;base64,${buffer.toString('base64')}`;
-  const { data } = await axios.post('https://www.chat-mentor.com/api/ai/image-to-text/', {
-    imageUrl: image64,
-    prompt: "Generate a text prompt for this image, focusing on visual elements, style, and key features."
-  }, {
-    headers: {
-      "content-type": "application/json",
-      "origin": "https://www.chat-mentor.com",
-      "referer": "https://www.chat-mentor.com/features/image-to-prompt/",
-      "sec-ch-ua": '"Not A(Brand";v="8", "Chromium";v="132"',
-      "user-agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Mobile Safari/537.36"
-    }
-  });
-  return data;
-}
-
-/**
- * Handler for processing the image and converting it to a prompt.
- * @param {Object} m - The message object.
- * @param {Object} context - The context of the command (usedPrefix, command).
- * @returns {Promise<void>}
- */
-let handler = async (m, { usedPrefix, command }) => {
+let handler = async (m, { conn, args }) => {
   try {
     let q = m.quoted ? m.quoted : m;
-    let mime = (q.msg || q).mimetype || '';
-    
-    // Check if the message contains an image
-    if (!mime || !mime.startsWith('image')) throw `Reply to an image with the caption *${usedPrefix + command}* or send an image with the caption *${usedPrefix + command}*`;
+    let mime = (q.msg || q).mimetype || "";
 
-    // Download the image
-    let media = await q.download();
+    if (!mime) return m.reply("Reply or send an image with the caption *.img2prompt*");
+    if (!/image\/(jpe?g|png)/.test(mime)) return m.reply("Only JPEG/PNG images are supported");
 
-    // Process the image to generate a prompt
-    let result = await imageToPrompt(media);
+    let imgBuffer = await q.download();
+    let base64Img = imgBuffer.toString("base64");
+    let base64Url = `data:${mime};base64,${base64Img}`;
 
-    // Check if the result is valid and send the generated prompt
-    if (result && result.result) {
-      await m.reply(result.result);
-    } else {
-      throw 'Unable to process the image or the result is invalid.';
-    }
-  } catch (error) {
-    console.error('Error in handler:', error);
-    await m.reply(`Error: ${error.message || error}`);
+    let { data } = await axios.post(
+      "https://imageprompt.org/api/ai/prompts/image",
+      { base64Url },
+      { headers: { accept: "/", "content-type": "application/json" } }
+    );
+
+    let prompt = data?.prompt || data;
+    if (!prompt) return m.reply("No prompt generated");
+
+    await m.reply(`${prompt}`);
+  } catch (e) {
+    m.reply(`Error: ${e.message}`);
   }
 };
 
-// Command setup
-handler.help = ['img2prompt'];
-handler.command = ['img2prompt'];
-handler.tags = ['ai'];
-handler.limit = false;
-
+handler.help = ["img2prompt"];
+handler.command = ["img2prompt"];
+handler.tags = ["ai"];
+handler.limit = true
 export default handler;
