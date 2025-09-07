@@ -62,6 +62,7 @@
     "ws": "^8.14.2",
     "xml2js": "*",
     "crypto-js": "*",
+    "sharp": "*",
     "node-cache": "*",
     "@google/generative-ai": "*",
     "yargs": "^17.7.1",
