@@ -27,7 +27,7 @@
   },
   "license": "GPL-3.0-or-later",
   "dependencies": {
-    "@adiwajshing/baileys": "npm:naruyaizumi@26.0.2",
+    "@adiwajshing/baileys": "github:EdderBot02/bail",
     "@adiwajshing/keyed-db": "^0.2.4",
     "@google/generative-ai": "*",
     "awesome-phonenumber": "^2.68.0",
