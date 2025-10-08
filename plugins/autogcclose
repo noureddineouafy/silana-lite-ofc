@@ -75,19 +75,7 @@ const handler = async (m, { conn, args }) => {
     const chatId = m.chat;
     if (!m.isGroup) return m.reply('❌ هذا الأمر يمكن استخدامه فقط في المجموعات!');
 
-    let groupMetadata;
-    try {
-        groupMetadata = await conn.groupMetadata(chatId);
-    } catch (err) {
-        console.error('خطأ أثناء جلب معلومات المجموعة:', err);
-        return m.reply('❌ فشل في جلب معلومات المجموعة.');
-    }
-
-    const sender = m.sender;
-    const isAdmin = groupMetadata.participants.some(participant =>
-        participant.id === sender && (participant.admin === 'admin' || participant.admin === 'superadmin'));
-
-    if (!isAdmin) return m.reply('❌ هذا الأمر متاح فقط لمشرفي المجموعة.');
+    let groupMetadata = conn.chats[chatId].metadata
 
     if (args[0]?.toLowerCase() === 'on') {
         global.autoGC[chatId] = {
@@ -137,5 +125,8 @@ const handler = async (m, { conn, args }) => {
 };
 
 handler.command = ['auto'];
-handler.owner = true 
+handler.owner = true
+handler.botAdmin = true
+handler.admin = true
+
 export default handler;
