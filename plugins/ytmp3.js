@@ -1,60 +1,104 @@
-import fetch from 'node-fetch'
+// instagram.com/noureddine_ouafy
+// © Silana Bot by noureddine
+// plugin from Ruby-Hoshino-Bot script // thanks to owner 
+import fetch from 'node-fetch';
 
-const handler = async (m, { conn, command, text }) => {
-  if (!text) throw `Use: ${command} <URL>`
+const newsletterJid = '120363285847738492@newsletter'; // ✅ your real channel ID
+const newsletterName = '⏤͟͞ू⃪፝͜⁞⟡『 Silana Bot Channel 』࿐⟡';
 
-  // Show loading reaction
-  await conn.sendMessage(m.chat, { react: { text: '⏳', key: m.key } })
+// ✅ Define the Silana Bot thumbnail (you can replace the URL with your own logo)
+const icons = 'https://i.ibb.co/vzRkHqR/silana.jpg';
+
+let handler = async (m, { conn, args, usedPrefix, command }) => {
+  const emoji = '🎵';
+  const contextInfo = {
+    mentionedJid: [m.sender],
+    isForwarded: true,
+    forwardingScore: 999,
+    forwardedNewsletterMessageInfo: {
+      newsletterJid,
+      newsletterName,
+      serverMessageId: -1
+    },
+    externalAdReply: {
+      title: 'Silana Bot 💎',
+      body: 'Developed by noureddine_ouafy',
+      thumbnailUrl: icons,
+      sourceUrl: 'https://whatsapp.com/channel/0029VaFjVUd6YQivyiK1WJ3B', // ✅ your WhatsApp channel link if available
+      mediaType: 1,
+      renderLargerThumbnail: false
+    }
+  };
+
+  if (!args[0]) {
+    return conn.reply(
+      m.chat,
+      `${emoji} *Oops!* Please send a YouTube link to download the audio.\n\nExample:\n\`${usedPrefix + command} https://youtu.be/KHgllosZ3kA\`\n\n🌐 © Silana Bot`,
+      m,
+      { contextInfo, quoted: m }
+    );
+  }
 
   try {
-    const api = `https://zenzzapiofficial.vercel.app/downloader/ytmp3?url=${encodeURIComponent(text)}`
-    const res = await fetch(api)
-    const json = await res.json()
+    await conn.reply(
+      m.chat,
+      `🌸 *Processing your request...*\nPlease wait a moment 🎧\n\n💠 Powered by *Silana Bot*`,
+      m,
+      { contextInfo, quoted: m }
+    );
 
-    if (!json.status || !json.result || !json.result.downloadLink) throw 'Failed to get audio. Try again!'
+    const url = args[0];
+    const apiUrl = `https://dark-core-api.vercel.app/api/download/YTMP3?key=api&url=${encodeURIComponent(url)}`;
+    const res = await fetch(apiUrl);
+    const json = await res.json();
 
-    const {
-      title,
-      author,
-      views,
-      lengthSeconds,
-      thumbnail,
-      videoUrl,
-      quality,
-      downloadLink
-    } = json.result
+    if (!json.status || !json.download) {
+      return conn.reply(
+        m.chat,
+        `❌ *Failed to download audio.*\nReason: ${json.message || 'Invalid API response.'}\n\n🌐 © Silana Bot`,
+        m,
+        { contextInfo, quoted: m }
+      );
+    }
 
-    // Send the audio file
-    await conn.sendMessage(m.chat, {
-      audio: { url: downloadLink },
-      mimetype: 'audio/mpeg',
-      fileName: `${title}.mp3`,
-      contextInfo: {
-        externalAdReply: {
-          title: title,
-          body: `Duration: ${lengthSeconds}s | Views: ${views.toLocaleString()} | Quality: ${quality}`,
-          thumbnailUrl: thumbnail,
-          renderLargerThumbnail: true,
-          mediaType: 1,
-          mediaUrl: videoUrl,
-          sourceUrl: videoUrl
-        }
-      }
-    }, { quoted: m })
+    const audioRes = await fetch(json.download);
+    const audioBuffer = await audioRes.buffer();
 
-    // Show success reaction
-    await conn.sendMessage(m.chat, { react: { text: '✅', key: m.key } })
+    const caption = `
+╭───[ 𝚈𝚃𝙼𝙿𝟹 • 🎶 ]───⬣
+📌 *Title:* ${json.title}
+📁 *Format:* ${json.format}
+📎 *Source:* ${url}
+╰────────────────⬣
+
+🌐 © Silana Bot — instagram.com/noureddine_ouafy`;
+
+    await conn.sendMessage(
+      m.chat,
+      {
+        audio: audioBuffer,
+        mimetype: 'audio/mpeg',
+        fileName: `${json.title}.mp3`,
+        ptt: false,
+        caption
+      },
+      { contextInfo, quoted: m }
+    );
 
   } catch (e) {
-    console.error(e)
-    // Show error reaction
-    await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key } })
-    throw 'An error occurred. Please try again later!'
+    console.error(e);
+    await conn.reply(
+      m.chat,
+      `❌ *An error occurred while processing the audio.*\nDetails: ${e.message}\n\n💠 © Silana Bot`,
+      m,
+      { contextInfo, quoted: m }
+    );
   }
-}
+};
 
-handler.help = ['ytmp3']
-handler.tags = ['downloader']
-handler.command = /^(ytmp3)$/i
-handler.limit = true
-export default handler
+handler.help = ['ytmp3'];
+handler.tags = ['downloader'];
+handler.command = ['ytmp3'];
+handler.limit = true;
+
+export default handler;
