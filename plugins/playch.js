@@ -1,103 +1,50 @@
-import axios from "axios";
-import yts from "yt-search";
+// plugin by my friend Const Offmon = Lana
+// modify by instagram.com/noureddine_ouafy
 
-// Supported audio formats
-const formatAudio = ['mp3', 'm4a', 'webm', 'acc', 'flac', 'opus', 'ogg', 'wav'];
+import moment from 'moment-timezone'
+import { toPTT } from '../lib/converter.js'
 
-const ddownr = {
-  // Function to download audio from a YouTube URL
-  download: async (url, format) => {
-    const config = {
-      method: 'GET',
-      url: `https://p.oceansaver.in/ajax/download.php?format=${format}&url=${encodeURIComponent(url)}&api=dfcb6d76f2f6a9894gjkege8a4ab232222`,
-      headers: { 'User-Agent': 'Mozilla/5.0' }
-    };
+const handler = async (m, { conn, text, usedPrefix, command }) => {
+  let channelId = "120363285847738492@newsletter" // Your updated channel ID
+  let q = m.quoted ? m.quoted : m
+  let mime = (q.msg || q).mimetype || q.mediaType || ''
 
-    const response = await axios.request(config);
-    if (response.data?.success) {
-      const { id, title, info } = response.data;
-      const downloadUrl = await ddownr.checkProgress(id);
-      return { title, downloadUrl, image: info.image, videoUrl: url };
-    } else {
-      throw new Error('Failed to fetch video details.');
-    }
-  },
+  if (/audio/.test(mime)) {
 
-  // Function to check download progress
-  checkProgress: async (id) => {
-    const config = {
-      method: 'GET',
-      url: `https://p.oceansaver.in/ajax/progress.php?id=${id}`,
-      headers: { 'User-Agent': 'Mozilla/5.0' }
-    };
+    if (!text) throw `Example: ${usedPrefix + command} DJ missing you`
 
-    while (true) {
-      const response = await axios.request(config);
-      if (response.data?.success && response.data.progress === 1000) {
-        return response.data.download_url;
-      }
-      // Wait for 5 seconds before checking again
-      await new Promise(resolve => setTimeout(resolve, 5000));
-    }
-  }
-};
+    let ppUrl = await conn.profilePictureUrl(conn.user.jid, 'image')
+      .catch(() => "https://telegra.ph/file/1dff1788814dd281170f8.jpg")
 
-let handler = async (m, { conn, text, command }) => {
-  if (!text) return m.reply(`Example:\n${command} mellow vibes`);
+    let date = moment().tz('Asia/Jakarta').locale('id').format('dddd, D MMMM YYYY')
+    let time = moment().tz('Asia/Jakarta').locale('id').format('HH:mm:ss')
 
-  try {
-    // React with "📥" to indicate download started
-    await conn.sendMessage(m.chat, { react: { text: "📥", key: m.key } });
+    let buffer = await q.download()
+    let media = await toPTT(buffer, 'mp3')
 
-    // Search YouTube for the requested song
-    const search = await yts(text);
-    const video = search.all[0];
-    if (!video) return m.reply('❌ Song not found.');
-
-    // Download audio in mp3 format
-    const result = await ddownr.download(video.url, "mp3");
-
-    // Fetch audio as a buffer
-    const audioRes = await axios.get(result.downloadUrl, { responseType: "arraybuffer" });
-    const audioBuffer = Buffer.from(audioRes.data, "binary");
-
-    const channelId = "120363377359042191@newsletter"; // Replace with your channel ID
-
-    // Send audio to the channel
     await conn.sendMessage(channelId, {
-      audio: audioBuffer,
-      mimetype: "audio/mp4",
+      audio: media.data,
+      mimetype: 'audio/mp4',
       ptt: true,
       contextInfo: {
-        forwardingScore: 999,
-        isForwarded: false,
         externalAdReply: {
-          title: result.title,
-          body: "S I L A N A -- AI",
-          mediaType: 2,
-          thumbnailUrl: result.image,
-          mediaUrl: result.videoUrl,
-          sourceUrl: result.videoUrl,
-          renderLargerThumbnail: true,
-          showAdAttribution: false
-        }
-      }
-    });
+          title: text,
+          body: "#1 bot in middle east | سيلانا بوت",
+          thumbnailUrl: ppUrl,
+          mediaType: 1,
+          renderLargerThumbnail: false
+        },
+      },
+    })
 
-    // React with "✅" to indicate success
-    await conn.sendMessage(m.chat, { react: { text: "✅", key: m.key } });
-    m.reply(`✔ Successfully sent *${result.title}* to the channel.`);
+    await m.reply("Audio successfully sent to channel")
 
-  } catch (err) {
-    console.error(err);
-    // React with "❌" if failed
-    await conn.sendMessage(m.chat, { react: { text: "❌", key: m.key } });
-    m.reply("❌ Failed to send audio to the channel.");
-  }
-};
+  } else throw `Reply to an audio with the command ${usedPrefix + command}`
+}
 
-handler.command = ["playch"];
-handler.owner = true;
-handler.tags = ["owner"];
-handler.help = ["playch"];
-export default handler;
+handler.command = ['playch']
+handler.tags = ['owner']
+handler.help = ['playch']
+handler.owner = true
+
+export default handler
