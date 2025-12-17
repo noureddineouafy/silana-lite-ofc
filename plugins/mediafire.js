@@ -1,112 +1,157 @@
-import * as cheerio from "cheerio";
-// 'fetch' is globally available in recent Node.js, so no import is needed
+/*
+  Feature : MediaFire Downloader (Send File Directly)
+  Author  : AlfiDev (adapted)
+  Support : Single File & Folder
+  Note    : Auto send file if <= 100MB, otherwise send link
+  modified: by noureddine ouafy 
+*/
 
-const mediaRegex = /https?:\/\/(www\.)?mediafire\.com\/(file|folder)\/(\w+)/;
+import axios from "axios"
+import * as cheerio from "cheerio"
+import crypto from "crypto"
 
-/**
- * This is the main handler function, matching the example's structure.
- * It uses 'text', 'usedPrefix', and 'command' from the handler arguments.
- */
-let handler = async (m, { conn, text, usedPrefix, command }) => {
-	// Translated from Indonesian
-	if (!text)
-		throw `Example:\n${usedPrefix}${command} https://www.mediafire.com/file/941xczxhn27qbby/GBWA_V12.25FF-By.SamMods-.apk/file`;
-	// Translated from Indonesian
-	if (!mediaRegex.test(text))
-		return m.reply("Invalid link! Make sure it's a correct Mediafire link.");
+const UA =
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/122 Safari/537.36"
 
-	try {
-        // Translated from Indonesian
-		await m.reply("Processing, please wait...");
+const MAX_SIZE = 100 * 1024 * 1024 // 100 MB
 
-		let res = await mediafire(text); // Call helper function
-		// Translated from Indonesian
-		let caption = `
-*💌 Name:* ${res.filename}
-*📊 Size:* ${res.sizeReadable}
-*🗂️ FileType :* ${res.filetype}
-*📦 MimeType:* ${res.mimetype}
-*🔐 Privacy:* ${res.privacy}
-*👤 Owner:* ${res.owner_name}
-`.trim();
+/* ================= UTILS ================= */
 
-		await m.reply(caption);
-		await conn.sendMessage(
-			m.chat,
-			{
-				document: { url: res.download },
-				fileName: res.filename,
-				mimetype: res.mimetype,
-			},
-			{ quoted: m }
-		);
-	} catch (e) {
-		console.error(e);
-		// Translated from Indonesian
-		m.reply(`Failed to get file from Mediafire. Error: ${e.message}`);
-	}
-};
-
-// These lines configure the handler, just like the example
-handler.help = ["mediafire"];
-handler.tags = ["downloader"];
-handler.command = /^(mediafire|mf)$/i;
-handler.limit = true; // Matches the example
-handler.args = true; // This command requires text
-
-// This exports the handler, matching the example
-export default handler;
-
-// --- Helper Functions ---
-// These live in the same file but outside the handler
-
-async function mediafire(url) {
-	const match = mediaRegex.exec(url);
-	// Translated from Indonesian
-	if (!match) throw new Error("Invalid URL!");
-
-	const id = match[3];
-
-	const response = await fetch(url);
-    if (!response.ok) throw new Error(`Fetch page failed with status ${response.status}`);
-	const html = await response.text();
-	const $ = cheerio.load(html);
-
-	const download = $("a#downloadButton").attr("href");
-	// Translated from Indonesian
-	if (!download) throw new Error("Failed to get download link from Mediafire page.");
-
-	const infoResponse = await fetch(
-		`https://www.mediafire.com/api/1.5/file/get_info.php?response_format=json&quick_key=${id}`
-	);
-    if (!infoResponse.ok) throw new Error(`Fetch API failed with status ${infoResponse.status}`);
-	const json = await infoResponse.json();
-
-	// Translated from Indonesian
-	if (json.response.result !== "Success") throw new Error("Failed to get file info from API.");
-	const info = json.response.file_info;
-
-	const size = parseInt(info.size);
-	const ext = info.filename.split(".").pop() || 'bin'; // Add fallback for no extension
-
-	return {
-		filename: info.filename,
-		ext: ext,
-		size: size,
-		sizeReadable: formatBytes(size),
-		download: download,
-		filetype: info.filetype,
-		mimetype: info.mimetype || `application/${ext}`,
-		privacy: info.privacy,
-		owner_name: info.owner_name,
-	};
+const getDirectDownload = async (filePageUrl) => {
+  try {
+    const res = await axios.get(filePageUrl, {
+      headers: { "User-Agent": UA },
+    })
+    const $ = cheerio.load(res.data)
+    return $("#downloadButton").attr("href") || null
+  } catch {
+    return null
+  }
 }
 
-function formatBytes(bytes, decimals = 2) {
-    if (!+bytes) return "0 Bytes"; // Handle zero or invalid input
-	const k = 1024;
-	const dm = decimals < 0 ? 0 : decimals;
-	const sizes = ["Bytes", "KB", "MB", "GB", "TB"];
-	const i = Math.floor(Math.log(bytes) / Math.log(k));
-	return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
+const downloadFile = async (url) => {
+  const res = await axios.get(url, {
+    responseType: "arraybuffer",
+    headers: { "User-Agent": UA },
+  })
+  return Buffer.from(res.data)
+}
+
+/* ================= MEDIAFIRE ================= */
+
+const scrapeSingleFile = (fileUrl) => {
+  const quickkey = fileUrl.match(/file\/([^/]+)/)?.[1]
+  if (!quickkey) return []
+
+  return [
+    {
+      filename: "mediafire-file",
+      size: 0,
+      quickkey,
+      filePageUrl: `https://www.mediafire.com/file/${quickkey}/file`,
+    },
+  ]
+}
+
+const getFolderFiles = async (folderKey) => {
+  let files = []
+  let chunk = 1
+
+  while (true) {
+    const r = crypto.randomBytes(4).toString("hex")
+    const url = `https://www.mediafire.com/api/1.4/folder/get_content.php?r=${r}&content_type=files&filter=all&order_by=name&order_direction=asc&chunk=${chunk}&version=1.5&folder_key=${folderKey}&response_format=json`
+
+    const res = await axios.get(url, { headers: { "User-Agent": UA } })
+    const content = res.data?.response?.folder_content
+    const list = content?.files || []
+
+    for (const f of list) {
+      files.push({
+        filename: f.filename,
+        size: Number(f.size),
+        quickkey: f.quickkey,
+        filePageUrl: `https://www.mediafire.com/file/${f.quickkey}/file`,
+      })
     }
+
+    if (content?.more_chunks === "no") break
+    chunk++
+  }
+
+  return files
+}
+
+const getAllItems = async (url) => {
+  if (url.includes("/folder/")) {
+    const key = url.match(/folder\/([^/]+)/)?.[1]
+    return key ? await getFolderFiles(key) : []
+  }
+
+  if (url.includes("/file/")) {
+    return scrapeSingleFile(url)
+  }
+
+  return []
+}
+
+/* ================= HANDLER ================= */
+
+let handler = async (m, { conn, args }) => {
+  if (!args[0])
+    return conn.reply(
+      m.chat,
+      "❌ Usage:\n.mediafire <mediafire link>",
+      m
+    )
+
+  await conn.reply(m.chat, "⏳ Processing MediaFire link...", m)
+
+  try {
+    const items = await getAllItems(args[0])
+    if (!items.length)
+      return conn.reply(m.chat, "❌ No files found.", m)
+
+    for (const item of items) {
+      const direct = await getDirectDownload(item.filePageUrl)
+      if (!direct) {
+        await conn.reply(m.chat, `❌ Failed: ${item.filename}`, m)
+        continue
+      }
+
+      // ❌ File too large
+      if (item.size > MAX_SIZE) {
+        await conn.reply(
+          m.chat,
+          `⚠️ *File too large to send*\n\n📄 Name: ${item.filename}\n📦 Size: ${(item.size / 1024 / 1024).toFixed(
+            2
+          )} MB\n🔗 Download:\n${direct}`,
+          m
+        )
+        continue
+      }
+
+      // ✅ Send file
+      const buffer = await downloadFile(direct)
+
+      await conn.sendFile(
+        m.chat,
+        buffer,
+        item.filename,
+        `📦 MediaFire File\n\n📄 Name: ${item.filename}\n📦 Size: ${(item.size / 1024 / 1024).toFixed(
+          2
+        )} MB`,
+        m
+      )
+    }
+  } catch (e) {
+    conn.reply(m.chat, "❌ Error while downloading MediaFire file.", m)
+  }
+}
+
+/* ================= META ================= */
+
+handler.help = ["mediafire"]
+handler.command = ["mediafire"]
+handler.tags = ["downloader"]
+handler.limit = true
+export default handler
