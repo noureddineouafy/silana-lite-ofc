@@ -1,43 +1,95 @@
-// instagram.com/noureddine_ouafy
-import axios from 'axios';
+// plugin from  Toxic-v2/xhclintohn thanks 🌟
+// re-modified by instagram.com/noureddine_ouafy
 
-let handler = async (m, { conn, text, command }) => {
-  if (!text) {
-    return m.reply('🚫 من فضلك أرسل اسم الأغنية بعد الأمر.\nمثال: \n\n*.play hello*');
-  }
-
+let handler = async (m, { conn, text }) => {
   try {
-    // نطلب معلومات الأغنية من API الخارجي
-    const res = await axios.get(`https://pursky.vercel.app/api/ytplay?q=${encodeURIComponent(text)}`);
-    const audio = res.data?.audio;
-
-    if (!audio) {
-      return m.reply('❌ فشل في جلب رابط الصوت من API الخارجي، حاول مجدداً.');
+    if (!text) {
+      return m.reply(
+        "🎵 *Spotify Play Command*\n\n" +
+        "You must provide a song name.\n\n" +
+        "📌 Example:\n" +
+        ".play Blinding Lights\n\n" +
+        "This command searches Spotify, downloads the song, and sends you the audio."
+      );
     }
 
-    // تهيئة الهيدر
-    const headers = res.data.note?.headers || {};
-    const audioRes = await axios.get(audio, {
-      responseType: 'arraybuffer',
-      headers: {
-        'User-Agent': headers['User-Agent'] || 'Mozilla/5.0 (Linux; Android 10)',
-        'Referer': headers['Referer'] || audio
-      }
+    if (text.length > 100) {
+      return m.reply("❌ Song title is too long. Please keep it under 100 characters.");
+    }
+
+    await conn.sendMessage(m.chat, {
+      react: { text: '⌛', key: m.key }
     });
 
-    let filename = text.replace(/\s+/g, '_') + '.mp3';
+    const res = await fetch(
+      `https://api.ootaizumi.web.id/downloader/spotifyplay?query=${encodeURIComponent(text)}`
+    );
+    const json = await res.json();
 
-    // إرسال الملف الصوتي
-    await conn.sendFile(m.chat, Buffer.from(audioRes.data), filename, `🎵 تم تحميل: ${text}`, m);
-  } catch (err) {
-    console.error(err);
-    return m.reply('⚠️ حدث خطأ أثناء تحميل الصوت.');
+    if (!json.status || !json.result?.download) {
+      await conn.sendMessage(m.chat, {
+        react: { text: '❌', key: m.key }
+      });
+      return m.reply(`❌ No results found for: *${text}*`);
+    }
+
+    const song = json.result;
+    const title = song.title || "Unknown Song";
+    const artist = song.artists || "Unknown Artist";
+    const audioUrl = song.download;
+
+    await conn.sendMessage(m.chat, {
+      react: { text: '✅', key: m.key }
+    });
+
+    // Send audio (playable)
+    await conn.sendMessage(
+      m.chat,
+      {
+        audio: { url: audioUrl },
+        mimetype: "audio/mpeg",
+        fileName: `${title}.mp3`,
+        contextInfo: {
+          externalAdReply: {
+            title: title.substring(0, 30),
+            body: artist.substring(0, 30),
+            thumbnailUrl: song.image || "",
+            sourceUrl: song.external_url || "",
+            mediaType: 1,
+            renderLargerThumbnail: true
+          }
+        }
+      },
+      { quoted: m }
+    );
+
+    // Send as document (downloadable)
+    await conn.sendMessage(
+      m.chat,
+      {
+        document: { url: audioUrl },
+        mimetype: "audio/mpeg",
+        fileName: `${title.replace(/[<>:"/\\|?*]/g, "_")}.mp3`,
+        caption: `🎵 *${title}*\n👤 ${artist}\n\nDownloaded via Spotify Play`
+      },
+      { quoted: m }
+    );
+
+  } catch (e) {
+    console.error("Spotify Play Error:", e);
+    await conn.sendMessage(m.chat, {
+      react: { text: '❌', key: m.key }
+    });
+    m.reply(`❌ Failed to download the song.\n\nError: ${e.message}`);
   }
 };
 
-handler.help = ['play'];
+handler.help = ["play"];
+
 handler.command = ['play'];
+
 handler.tags = ['downloader'];
+
 handler.limit = true;
 
 export default handler;
