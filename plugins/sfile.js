@@ -1,125 +1,140 @@
-/*
-• SFILE DOWNLOAD PLUGIN USING SCRAPING FROM
-DAFFA CHANNEL
-*/
+import axios from 'axios'
+import cheerio from 'cheerio'
 
-import axios from 'axios';
-import * as cheerio from 'cheerio';
-
-let handler = async (m, { conn, text, usedPrefix, command }) => {
-  if (!text) return m.reply(`Example:\n${usedPrefix + command} https://sfile.mobi/9chs5aeiaWJ`);
-  try {
-    let url = text.trim();
-
-    const createHeaders = (referer) => ({
-      'User-Agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36',
-      'sec-ch-ua': '"Not/A)Brand";v="8", "Chromium";v="137", "Google Chrome";v="137"',
-      'dnt': '1',
-      'sec-ch-ua-mobile': '?1',
-      'sec-ch-ua-platform': '"Android"',
-      'sec-fetch-site': 'same-origin',
-      'sec-fetch-mode': 'cors',
-      'sec-fetch-dest': 'empty',
-      'Referer': referer,
-      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
-      'Accept-Language': 'en-US,en;q=0.9'
-    });
-
-    const extractCookies = (responseHeaders) =>
-      responseHeaders['set-cookie']?.map(cookie => cookie.split(';')[0]).join('; ') || '';
-
-    const extractMetadata = ($) => {
-      const metadata = {};
-      $('.file-content').eq(0).each((_, el) => {
-        const $el = $(el);
-        metadata.file_name = $el.find('img').attr('alt');
-        metadata.mimetype = $el.find('.list').eq(0).text().trim().split('-')[1].trim();
-        metadata.upload_date = $el.find('.list').eq(2).text().trim().split(':')[1].trim();
-        metadata.download_count = $el.find('.list').eq(3).text().trim().split(':')[1].trim();
-        metadata.author_name = $el.find('.list').eq(1).find('a').text().trim();
-      });
-      return metadata;
-    };
-
-    const makeRequest = async (url, options) => {
-      try {
-        return await axios.get(url, options);
-      } catch (error) {
-        if (error.response) return error.response;
-        throw new Error(`Request failed: ${error.message}`);
-      }
-    };
-
-    const download = async (url, resultBuffer = false) => {
-      let headers = createHeaders(url);
-      const initialResponse = await makeRequest(url, { headers });
-      const cookies = extractCookies(initialResponse.headers);
-      headers['Cookie'] = cookies;
-
-      let $ = cheerio.load(initialResponse.data);
-      const metadata = extractMetadata($);
-
-      const downloadUrl = $('#download').attr('href');
-      if (!downloadUrl) return m.reply('Download URL not found');
-
-      headers['Referer'] = downloadUrl;
-      const processResponse = await makeRequest(downloadUrl, { headers });
-
-      $ = cheerio.load(processResponse.data);
-      const downloadButton = $('#download');
-      if (!downloadButton.length) return m.reply('Download button not found');
-
-      const onClickAttr = downloadButton.attr('onclick');
-      if (!onClickAttr) return m.reply('No "onclick" attribute found');
-
-      const key = onClickAttr.split("'+'")[1]?.split("';")[0];
-      if (!key) return m.reply('Failed to retrieve download key');
-
-      const finalUrl = downloadButton.attr('href') + '&k=' + key;
-
-      let fileBuffer;
-      if (resultBuffer) {
-        const fileResponse = await makeRequest(finalUrl, {
-          headers,
-          responseType: 'arraybuffer'
-        });
-        fileBuffer = Buffer.from(fileResponse.data);
-      }
-
-      return {
-        metadata,
-        fileBuffer,
-        finalUrl
-      };
-    };
-
-    await m.reply('*_P R O C E S S I N G..._*');
-
-    let { metadata, fileBuffer, finalUrl } = await download(url, true);
-
-    if (!fileBuffer) return m.reply('Failed to retrieve file buffer');
-
-    await conn.sendFile(
-      m.chat,
-      fileBuffer,
-      metadata.file_name || 'file.unknown',
-      `📁 \`SFILE DOWNLOADER\`\n\n` +
-      `🧾 *File Name:* ${metadata.file_name}\n` +
-      `📂 *File Type:* ${metadata.mimetype}\n` +
-      `📅 *Uploaded On:* ${metadata.upload_date}\n` +
-      `✍️ *Author:* ${metadata.author_name}\n` +
-      `📥 *Downloaded:* ${metadata.download_count} times`,
-      m
-    );
-
-  } catch (e) {
-    console.error(e);
-    return m.reply('❌ Failed to fetch or send file from SFile. Make sure the link is correct, the file is available, and it doesn’t require a password.');
+let handler = async (m, { conn, args }) => {
+  if (!args[0]) {
+    throw '❌ Please provide an SFile URL.\n\nExample:\n.sfile https://sfile.co/CwY59xc325C'
   }
-};
 
-handler.help = ["sfile"];
-handler.tags = ["downloader"];
-handler.command = ["sfile"];
-handler.limit = true;
-export default handler;
+  const url = args[0]
+
+  try {
+    const result = await sfile(url)
+
+    if (!result.download_url) {
+      throw '❌ Failed to retrieve the download link.'
+    }
+
+    let message = `
+📁 *SFile Downloader Info*
+
+• *File Name:* ${result.file_name || 'Unknown'}
+• *File Size:* ${result.size_from_text || 'Unknown'}
+• *Author:* ${result.author_name || 'Unknown'}
+• *Upload Date:* ${result.upload_date || 'Unknown'}
+• *Download Count:* ${result.download_count || 'Unknown'}
+
+🔗 *Direct Download Link:*
+${result.download_url}
+    `.trim()
+
+    await conn.sendMessage(m.chat, { text: message }, { quoted: m })
+  } catch (err) {
+    throw `❌ Error:\n${err.message || err}`
+  }
+}
+
+handler.help = ['sfile']
+handler.command = ['sfile']
+handler.tags = ['downloader']
+handler.limit = true
+
+export default handler
+
+// =========================
+// SFILE SCRAPER FUNCTION
+// =========================
+
+async function sfile(url) {
+  const headers = {
+    'user-agent': 'Mozilla/5.0 (Linux; Android 10; K)',
+    accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+    'accept-language': 'en-US,en;q=0.9'
+  }
+
+  // Step 1: Load initial page
+  const r1 = await axios.get(url, { headers })
+  const cookie = (r1.headers['set-cookie'] || [])
+    .map(v => v.split(';')[0])
+    .join('; ')
+  if (cookie) headers.cookie = cookie
+
+  let $ = cheerio.load(r1.data)
+
+  const file_name = $('h1').first().text().trim() || null
+  const size_from_text =
+    r1.data.match(/(\d+(?:\.\d+)?\s?(?:KB|MB|GB))/i)?.[1] || null
+
+  const infoText =
+    $('meta[property="og:description"]').attr('content') || ''
+
+  const author_name =
+    infoText.match(/uploaded by\s([^ ]+)/i)?.[1] || null
+  const upload_date =
+    infoText.match(/on\s(\d+\s[A-Za-z]+\s\d{4})/i)?.[1] || null
+
+  const download_count =
+    $('span')
+      .filter((_, el) =>
+        $(el).text().toLowerCase().includes('download')
+      )
+      .first()
+      .text()
+      .match(/\d+/)?.[0] || null
+
+  const pageurl = $('meta[property="og:url"]').attr('content')
+  if (!pageurl) {
+    return {
+      file_name,
+      size_from_text,
+      author_name,
+      upload_date,
+      download_count,
+      download_url: null
+    }
+  }
+
+  // Step 2: Open download page
+  headers.referer = url
+  const r2 = await axios.get(pageurl, { headers })
+  $ = cheerio.load(r2.data)
+
+  const gateUrl = $('#download').attr('href')
+  if (!gateUrl) {
+    return {
+      file_name,
+      size_from_text,
+      author_name,
+      upload_date,
+      download_count,
+      download_url: null
+    }
+  }
+
+  // Step 3: Extract final download link
+  headers.referer = pageurl
+  const r3 = await axios.get(gateUrl, { headers })
+
+  const scripts = cheerio
+    .load(r3.data)('script')
+    .map((_, el) => cheerio.load(el).html())
+    .get()
+    .join('\n')
+
+  const final = scripts.match(
+    /https:\\\/\\\/download\d+\.sfile\.(?:co|mobi)\\\/downloadfile\\\/\d+\\\/\d+\\\/[a-z0-9]+\\\/[^"'\\\s]+(\?[^"']+)?/i
+  )
+
+  const download_url = final
+    ? final[0].replace(/\\\//g, '/')
+    : null
+
+  return {
+    file_name,
+    size_from_text,
+    author_name,
+    upload_date,
+    download_count,
+    download_url
+  }
+}
