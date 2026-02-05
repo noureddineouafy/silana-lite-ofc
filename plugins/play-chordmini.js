@@ -90,7 +90,7 @@ class ChordMiniAPI {
 // Plugin handler
 let handler = async (m, { conn, args }) => {
   if (!args[0]) {
-    return m.reply("⚠️ Please provide a search query.\nExample: *.chordmini Despacito*")
+    return m.reply("⚠️ Please provide a search query.\nExample: *.play-chordmini Despacito*")
   }
 
   const query = args.join(" ")
@@ -104,7 +104,7 @@ let handler = async (m, { conn, args }) => {
   await conn.sendFile(m.chat, result.proxyUrl, `${result.title}.mp3`, `🎵 ${result.title}`, m)
 }
 
-handler.help = handler.command = ['chordmini']
+handler.help = handler.command = ['play-chordmini']
 handler.tags = ['downloader']
 handler.limit = true
 
