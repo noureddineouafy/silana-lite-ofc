@@ -111,6 +111,6 @@ let handler = async (m, { conn, text, usedPrefix, command }) => {
 
 handler.help = ['create-art'];
 handler.command = ['create-art'];
-handler.tags = ['ai'];
+handler.tags = ['editor'];
 handler.limit = true;
 export default handler;
