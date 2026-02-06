@@ -150,7 +150,7 @@ let kana = async (m, { conn, usedPrefix, command }) => {
 }
 
 kana.help = ['image2sketch']
-kana.tags = ['ai']
+kana.tags = ['editor']
 kana.command = /^(image2sketch)$/i
 kana.limit = true
 
