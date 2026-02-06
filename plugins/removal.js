@@ -85,6 +85,6 @@ let handler = async (m, { conn, command, quoted, prefix }) => {
 }
 
 handler.help = handler.command = ['removal']
-handler.tags = ['tools']
+handler.tags = ['editor']
 handler.limit = true
 export default handler
