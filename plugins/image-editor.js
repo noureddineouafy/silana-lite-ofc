@@ -130,7 +130,7 @@ image-editor make this photo Pixar style`
 }
 
 handler.help = ["image-editor"]
-handler.tags = ["ai"]
+handler.tags = ["editor"]
 handler.command = /^(image-editor)$/i
 handler.limit = true
 
