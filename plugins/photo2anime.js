@@ -149,7 +149,7 @@ let handler = async (m, { conn }) => {
 }
 
 handler.help = ['photo2anime']
-handler.tags = ['ai']
+handler.tags = ['editor']
 handler.command = ['photo2anime']
 handler.limit = true
 
