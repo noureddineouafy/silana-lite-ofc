@@ -92,7 +92,7 @@ let handler = async (m, { conn }) => {
 }
 
 handler.help = handler.command = ['rmwatermark']
-handler.tags = ['tools']
+handler.tags = ['editor']
 handler.limit = true
 
 export default handler
