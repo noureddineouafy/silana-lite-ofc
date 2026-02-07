@@ -73,7 +73,7 @@ let handler = async (m, { conn, usedPrefix, command }) => {
 };
 
 handler.help = ["srvrembg"];
-handler.tags = ["tools"];
+handler.tags = ["editor"];
 handler.command = ["srvrembg"];
 handler.limit = true;
 
