@@ -24,9 +24,9 @@ let handler = async (m, { conn, usedPrefix, command }) => {
   }
 }
 
-handler.help = ['upscale-image2']
+handler.help = ['upscale-image']
 handler.tags = ['editor']
-handler.command = /^(upscale-image2)$/i
+handler.command = /^(upscale-image)$/i
 handler.premium = false
 
 export default handler
