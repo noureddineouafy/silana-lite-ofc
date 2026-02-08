@@ -67,7 +67,7 @@ let handler = async (m, { conn, usedPrefix, command }) => {
 }
 
 handler.help = ['upscale-hd']
-handler.tags = ['tools']
+handler.tags = ['editor']
 handler.command = /^upscale-hd$/i
 handler.limit = true
 export default handler
