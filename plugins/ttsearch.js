@@ -1,100 +1,117 @@
-// @instagram: noureddine_ouafy
+import axios from "axios"
 
-import axios from 'axios';
-
-const searchCache = new Map();
+const searchCache = new Map()
 
 async function ttSearch(query) {
-  const response = await axios("https://tikwm.com/api/feed/search", {
-    method: "POST",
-    headers: {
-      "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
-      "cookie": "current_language=en",
-      "User-Agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36",
-    },
-    data: {
+  const response = await axios.post(
+    "https://tikwm.com/api/feed/search",
+    new URLSearchParams({
       keywords: query,
       count: 12,
       cursor: 0,
       web: 1,
       hd: 1,
+    }),
+    {
+      headers: {
+        "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
+        cookie: "current_language=en",
+        "User-Agent":
+          "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36",
+      },
     }
-  });
-  return response.data.data;
+  )
+
+  return response.data.data
 }
 
 let handler = async (m, { conn, text, usedPrefix, command }) => {
-  if (!text) throw `📌 Example:\n${usedPrefix + command} cats`;
 
-  // Check if input is a number (reply)
-  if (/^\d+$/.test(text.trim())) {
-    let number = parseInt(text.trim());
-    let cache = searchCache.get(m.sender);
+  if (!text)
+    throw `Example:\n${usedPrefix + command} cat\n${usedPrefix + command} 1`
 
-    if (!cache || !cache.results) {
-      return m.reply("❌ No previous search found. Use:\n.ttsearch cats");
-    }
+  // ==============================
+  // IF NUMBER → DOWNLOAD
+  // ==============================
+  if (/^\d+$/.test(text)) {
 
-    let video = cache.results[number - 1];
-    if (!video) return m.reply("⚠️ Invalid number.");
+    let cache = searchCache.get(m.chat)
+    if (!cache)
+      return m.reply("❌ No previous search.\nUse:\n.ttsearch cat")
 
-    let videoUrl = "https://tikwm.com" + video.play;
-    let audioUrl = "https://tikwm.com" + video.music;
+    let number = parseInt(text)
+    let video = cache.results[number - 1]
 
-    m.reply("📥 Downloading TikTok video and audio. Please wait...");
+    if (!video)
+      return m.reply("⚠️ Invalid number.")
 
     try {
-      // Download video and audio as buffer
-      let videoBuffer = (await axios.get(videoUrl, { responseType: 'arraybuffer' })).data;
-      let audioBuffer = (await axios.get(audioUrl, { responseType: 'arraybuffer' })).data;
 
-      // Send video
-      await conn.sendFile(
-        m.chat,
-        videoBuffer,
-        'video.mp4',
-        `🎬 Title: ${video.title}\n👤 Author: ${video.author.nickname}`,
-        m
-      );
+      await m.reply("📥 Sending video...")
 
-      // Send audio
-      await conn.sendFile(
+      let videoUrl = video.hdplay || video.play
+      if (!videoUrl)
+        return m.reply("❌ Video link not found.")
+
+      if (!videoUrl.startsWith("http"))
+        videoUrl = "https://tikwm.com" + videoUrl
+
+      await conn.sendMessage(
         m.chat,
-        audioBuffer,
-        'audio.mp3',
-        `🎵 Music: ${video.music_info.title}\n🎤 Author: ${video.music_info.author}`,
-        m
-      );
+        {
+          video: { url: videoUrl },
+          caption:
+            `🎬 ${video.title || "No title"}\n` +
+            `👤 ${video.author?.nickname || "Unknown"}`
+        },
+        { quoted: m }
+      )
 
     } catch (e) {
-      return m.reply("❌ Failed to download video or audio.");
+      console.error(e)
+      m.reply("❌ Failed to send video.")
     }
-    return;
+
+    return
   }
 
-  // Search query
+  // ==============================
+  // SEARCH MODE
+  // ==============================
+
   try {
-    let results = (await ttSearch(text)).videos;
-    if (!results || results.length === 0) throw '❌ No results found.';
 
-    // Save results in memory
-    searchCache.set(m.sender, { query: text, results });
+    let res = await ttSearch(text)
+    if (!res?.videos?.length)
+      throw "No results found."
 
-    let message = `📥 *Search Results for:* ${text}\n🧾 *Reply with a number to download*\n\n`;
+    searchCache.set(m.chat, {
+      query: text,
+      results: res.videos
+    })
 
-    for (let i = 0; i < results.length; i++) {
-      message += `*${i + 1}. ${results[i].title}*\n👤 ${results[i].author.nickname}\n───────────────\n`;
-    }
+    let message =
+      `📥 *Search Results for:* ${text}\n` +
+      `Reply with:\n${usedPrefix + command} 1\n\n`
 
-    await m.reply(message.trim());
+    res.videos.forEach((v, i) => {
+      message +=
+        `*${i + 1}. ${v.title || "No title"}*\n` +
+        `👤 ${v.author?.nickname || "Unknown"}\n` +
+        `───────────────\n`
+    })
+
+    m.reply(message.trim())
+
   } catch (err) {
-    throw `❌ Error: ${err.message || err}`;
+    console.error(err)
+    m.reply("❌ Error fetching results.")
   }
-};
+}
 
-handler.help = ["ttsearch"];
-handler.tags = ["search"];
-handler.command = ["ttsearch"];
-handler.limit = true;
+handler.help = ["ttsearch"]
+handler.tags = ["search"]
+handler.command = ["ttsearch"]
+handler.limit = true
 
-export default handler;
+export default handler
