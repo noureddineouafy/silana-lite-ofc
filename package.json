@@ -60,11 +60,9 @@
     "util": "^0.12.5",
     "wa-sticker-formatter": "^4.3.2",
     "ws": "^8.14.2",
-    "xml2js": "*",
     "crypto-js": "*",
     "sharp": "^0.32.2",
     "node-cache": "*",
-    "@google/generative-ai": "*",
     "yargs": "^17.7.1",
     "yt-search": "^2.10.4"
   }
