@@ -29,7 +29,6 @@
   "dependencies": {
     "@adiwajshing/baileys": "npm:@skyzopedia/baileys-mod",
     "@adiwajshing/keyed-db": "^0.2.4",
-    "@google/generative-ai": "*",
     "awesome-phonenumber": "^2.68.0",
     "axios": "^1.7.3",
     "canvafy": "^7.1.0",
