@@ -3,7 +3,7 @@
 let handler = async (m, { conn, usedPrefix, command, text }) => {
   if (!text)
     return m.reply(
-      `Enter the apk name \n\nExample:\n${usedPrefix + command} facebook lite\n\n\n المرجو كتابة الأمر متبوع باسم التطبيق الذي تريد تحميله`,
+      `Enter the apk name \n\nExample:\n${usedPrefix + command} facebook lite\n\n\n 🤦المرجو كتابة الأمر متبوع باسم التطبيق الذي تريد تحميله`,
     );
 
   conn.apk = conn.apk ? conn.apk : {};
