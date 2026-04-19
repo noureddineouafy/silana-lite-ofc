@@ -1,132 +1,185 @@
-import fs from 'fs';
-import moment from 'moment-timezone';
-import schedule from 'node-schedule';
+// ====================================================
+// 🔒 AUTO GROUP LOCK/UNLOCK
+// instagram.com/noureddine_ouafy
+// Commands: .auto on | .auto off | .auto set HH:MM HH:MM | .auto status
+// ====================================================
 
-const dbFile = './autoGC.json';
-const timeZone = 'Africa/Casablanca';
+import fs from 'fs'
+import moment from 'moment-timezone'
+import schedule from 'node-schedule'
 
-// تعريف قاعدة بيانات الإغلاق التلقائي
-global.autoGC = global.autoGC || {};
+const dbFile   = './autoGC.json'
+const timeZone = 'Africa/Casablanca'
 
-// تحميل البيانات من الملف إذا كان موجودًا
+// ─── تحميل قاعدة البيانات ─────────────────────────────
+global.autoGC = global.autoGC || {}
 if (fs.existsSync(dbFile)) {
-    global.autoGC = JSON.parse(fs.readFileSync(dbFile));
+  try { global.autoGC = JSON.parse(fs.readFileSync(dbFile)) }
+  catch { global.autoGC = {} }
 } else {
-    fs.writeFileSync(dbFile, JSON.stringify({}, null, 2));
+  fs.writeFileSync(dbFile, JSON.stringify({}, null, 2))
 }
 
-// وظيفة لحفظ البيانات في الملف
 const saveDB = () => {
-    try {
-        fs.writeFileSync(dbFile, JSON.stringify(global.autoGC, null, 2));
-        return true;
-    } catch (err) {
-        console.error('خطأ أثناء حفظ قاعدة البيانات:', err);
-        return false;
-    }
-};
-
-// وظيفة لفحص حالة المجموعات
-const checkGroupsStatus = async () => {
-    try {
-        const currentTime = moment().tz(timeZone).format('HH:mm');
-        for (const chatId in global.autoGC) {
-            if (!global.autoGC[chatId]?.enabled) continue;
-            const { closeTime, openTime, originalName, status } = global.autoGC[chatId];
-
-            if (currentTime === closeTime && status !== 'closed') {
-                try {
-                    await conn.groupSettingUpdate(chatId, 'announcement');
-                    await conn.groupUpdateSubject(chatId, `${originalName} (❌ مغلق)`);
-                    await conn.sendMessage(chatId, { text: `🚫 * تم إغلاق المجموعة مؤقتًا دائما إقرؤا قوانين المجموعة حتى لا يتم طردكم* 🚫\n\nسيتم إعادة فتحها في *${openTime}*.` });
-                    global.autoGC[chatId].status = 'closed';
-                    saveDB();
-                } catch (e) {
-                    console.error(`خطأ أثناء إغلاق المجموعة ${chatId}:`, e);
-                }
-            }
-
-            if (currentTime === openTime && status !== 'opened') {
-                try {
-                    await conn.groupSettingUpdate(chatId, 'not_announcement');
-                    await conn.groupUpdateSubject(chatId, originalName);
-                    await conn.sendMessage(chatId, { text: `✅ *تم إعادة فتح المجموعة استمتعوا بمميزات البوت و اقرؤوا قوانين المجموعة لأن نور الدين لا يتهاون مع من يخالفها* ✅\n\nوقت الإغلاق التالي: *${closeTime}*.` });
-                    global.autoGC[chatId].status = 'opened';
-                    saveDB();
-                } catch (e) {
-                    console.error(`خطأ أثناء فتح المجموعة ${chatId}:`, e);
-                }
-            }
-        }
-    } catch (err) {
-        console.error('خطأ في checkGroupsStatus:', err);
-    }
-};
-
-// جدولة الفحص كل دقيقة
-if (!global.autoGCSchedule) {
-    global.autoGCSchedule = schedule.scheduleJob('* * * * *', () => {
-        checkGroupsStatus().catch(err => console.error('خطأ في الجدولة:', err));
-    });
-    console.log('تم تهيئة الجدولة التلقائية للمجموعات');
+  try { fs.writeFileSync(dbFile, JSON.stringify(global.autoGC, null, 2)); return true }
+  catch (e) { console.error('[AutoGC] خطأ حفظ DB:', e); return false }
 }
 
+// ─── حساب الوقت بعد N دقيقة ──────────────────────────
+const timeAfterMinutes = (timeStr, n) => {
+  const [h, m] = timeStr.split(':').map(Number)
+  const total  = h * 60 + m - n
+  const hh     = Math.floor(((total % 1440) + 1440) % 1440 / 60)
+  const mm     = ((total % 1440) + 1440) % 1440 % 60
+  return `${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}`
+}
+
+// ─── فحص المجموعات كل دقيقة ──────────────────────────
+const checkGroupsStatus = async () => {
+  const conn = global.conn
+  if (!conn) return
+
+  const now = moment().tz(timeZone).format('HH:mm')
+
+  for (const chatId in global.autoGC) {
+    const gc = global.autoGC[chatId]
+    if (!gc?.enabled) continue
+
+    const { closeTime, openTime, originalName, status } = gc
+
+    // ── إشعار قبل الإغلاق بـ 2 دقيقة ──
+    if (now === timeAfterMinutes(closeTime, 2) && gc.notifiedClose !== now) {
+      gc.notifiedClose = now
+      saveDB()
+      await conn.sendMessage(chatId, {
+        text: `⚠️ *تنبيه!*\n\nبعد *دقيقتين* سيتم *إغلاق المجموعة* 🔒\nموعد الإغلاق: *${closeTime}*\n\n_Powered by Silana AI_ 🤖`
+      }).catch(console.error)
+    }
+
+    // ── إشعار قبل الفتح بـ 2 دقيقة ──
+    if (now === timeAfterMinutes(openTime, 2) && gc.notifiedOpen !== now) {
+      gc.notifiedOpen = now
+      saveDB()
+      await conn.sendMessage(chatId, {
+        text: `⚠️ *تنبيه!*\n\nبعد *دقيقتين* سيتم *فتح المجموعة* ✅\nموعد الفتح: *${openTime}*\n\n_Powered by Silana AI_ 🤖`
+      }).catch(console.error)
+    }
+
+    // ── إغلاق المجموعة ──
+    if (now === closeTime && status !== 'closed') {
+      try {
+        await conn.groupSettingUpdate(chatId, 'announcement')
+        await conn.groupUpdateSubject(chatId, `${originalName} (❌ مغلق)`)
+        await conn.sendMessage(chatId, {
+          text: `🔒 *تم إغلاق المجموعة*\n\nالوقت: *${now}*\n💤 سيتم إعادة فتحها في *${openTime}*\n\n_Powered by Silana AI_ 🤖`
+        })
+        global.autoGC[chatId].status = 'closed'
+        saveDB()
+        console.log(`[AutoGC] 🔒 أُغلقت: ${chatId}`)
+      } catch (e) { console.error(`[AutoGC] خطأ إغلاق ${chatId}:`, e) }
+    }
+
+    // ── فتح المجموعة ──
+    if (now === openTime && status !== 'opened') {
+      try {
+        await conn.groupSettingUpdate(chatId, 'not_announcement')
+        await conn.groupUpdateSubject(chatId, originalName)
+        await conn.sendMessage(chatId, {
+          text: `✅ *تم فتح المجموعة*\n\nالوقت: *${now}*\n💬 يمكنكم المشاركة الآن\n🔒 وقت الإغلاق القادم: *${closeTime}*\n\n_Powered by Silana AI_ 🤖`
+        })
+        global.autoGC[chatId].status = 'opened'
+        saveDB()
+        console.log(`[AutoGC] ✅ فُتحت: ${chatId}`)
+      } catch (e) { console.error(`[AutoGC] خطأ فتح ${chatId}:`, e) }
+    }
+  }
+}
+
+// ─── تشغيل الجدولة مرة وحدة ──────────────────────────
+if (!global.autoGCSchedule) {
+  global.autoGCSchedule = schedule.scheduleJob('* * * * *', () => {
+    checkGroupsStatus().catch(console.error)
+  })
+  console.log('[AutoGC] ✅ Scheduler شغال — كل دقيقة')
+}
+
+// ─── الأوامر ──────────────────────────────────────────
 const handler = async (m, { conn, args }) => {
-    const chatId = m.chat;
-    if (!m.isGroup) return m.reply('❌ هذا الأمر يمكن استخدامه فقط في المجموعات!');
+  if (!m.isGroup) return m.reply('❌ هذا الأمر للمجموعات فقط!')
 
-    let groupMetadata = conn.chats[chatId].metadata
+  const chatId        = m.chat
+  const groupMetadata = conn.chats[chatId]?.metadata || await conn.groupMetadata(chatId)
+  const sub           = args[0]?.toLowerCase()
 
-    if (args[0]?.toLowerCase() === 'on') {
-        global.autoGC[chatId] = {
-            enabled: true,
-            closeTime: global.autoGC[chatId]?.closeTime || '22:00',
-            openTime: global.autoGC[chatId]?.openTime || '10:00',
-            originalName: groupMetadata.subject,
-            status: 'opened'
-        };
-        return saveDB()
-            ? m.reply(`✅ تم *تفعيل* الإغلاق/الفتح التلقائي.\n\n📌 الإغلاق: ${global.autoGC[chatId].closeTime}\n📌 الفتح: ${global.autoGC[chatId].openTime}`)
-            : m.reply('❌ فشل في حفظ الإعدادات.');
+  // .auto on
+  if (sub === 'on') {
+    global.autoGC[chatId] = {
+      enabled:      true,
+      closeTime:    global.autoGC[chatId]?.closeTime || '22:00',
+      openTime:     global.autoGC[chatId]?.openTime  || '10:00',
+      originalName: groupMetadata.subject,
+      status:       'opened'
     }
+    return saveDB()
+      ? m.reply(
+          `✅ *تم تفعيل الإغلاق/الفتح التلقائي*\n\n` +
+          `🔴 الإغلاق: *${global.autoGC[chatId].closeTime}*\n` +
+          `🟢 الفتح:   *${global.autoGC[chatId].openTime}*\n\n` +
+          `لتغيير الأوقات: *.auto set HH:MM HH:MM*\n_(الأول إغلاق، الثاني فتح)_`
+        )
+      : m.reply('❌ فشل في حفظ الإعدادات.')
+  }
 
-    if (args[0]?.toLowerCase() === 'off') {
-        if (!global.autoGC[chatId]?.enabled) return m.reply('⚠️ الإغلاق/الفتح التلقائي مُعطل بالفعل.');
-        delete global.autoGC[chatId];
-        return saveDB() ? m.reply('❌ تم *إلغاء* تفعيل الإغلاق/الفتح التلقائي.') : m.reply('❌ فشل في حفظ الإعدادات.');
-    }
+  // .auto off
+  if (sub === 'off') {
+    if (!global.autoGC[chatId]?.enabled) return m.reply('⚠️ الميزة معطلة بالفعل.')
+    delete global.autoGC[chatId]
+    return saveDB() ? m.reply('❌ تم *إلغاء* الإغلاق/الفتح التلقائي.') : m.reply('❌ فشل في الحفظ.')
+  }
 
-    if (args[0]?.toLowerCase() === 'set' && args[1] && args[2]) {
-        if (!/^([01]\d|2[0-3]):([0-5]\d)$/.test(args[1]) || !/^([01]\d|2[0-3]):([0-5]\d)$/.test(args[2])) {
-            return m.reply('⚠️ تنسيق الوقت غير صحيح! استخدم HH:MM بنظام 24 ساعة.');
-        }
-        global.autoGC[chatId] = {
-            enabled: true,
-            closeTime: args[1],
-            openTime: args[2],
-            originalName: groupMetadata.subject,
-            status: 'opened'
-        };
-        return saveDB()
-            ? m.reply(`✅ تم تحديث الجدولة.\n📌 الإغلاق: ${args[1]}\n📌 الفتح: ${args[2]}`)
-            : m.reply('❌ فشل في حفظ الإعدادات.');
-    }
+  // .auto set 22:00 10:00
+  if (sub === 'set') {
+    if (!args[1] || !args[2])
+      return m.reply('⚠️ مثال: *.auto set 22:00 10:00*\n_(الأول إغلاق، الثاني فتح)_')
+    if (!/^([01]\d|2[0-3]):([0-5]\d)$/.test(args[1]) || !/^([01]\d|2[0-3]):([0-5]\d)$/.test(args[2]))
+      return m.reply('⚠️ صيغة خاطئة! استخدم HH:MM بنظام 24 ساعة.')
 
-    if (args[0]?.toLowerCase() === 'status') {
-        if (!global.autoGC[chatId]) return m.reply('⚠️ الإغلاق/الفتح التلقائي غير مفعل.');
-        const { enabled, closeTime, openTime, status } = global.autoGC[chatId];
-        return m.reply(`📊 *حالة التحكم التلقائي بالمجموعة*\n\n` +
-            `الحالة: ${enabled ? '✅ مفعل' : '❌ معطل'}\n` +
-            `حالة المجموعة: ${status === 'closed' ? '🔒 مغلقة' : '🔓 مفتوحة'}\n` +
-            `الإغلاق: ${closeTime}\nالفتح: ${openTime}`);
-    }
+    if (!global.autoGC[chatId]) global.autoGC[chatId] = { originalName: groupMetadata.subject, status: 'opened' }
+    global.autoGC[chatId].enabled   = true
+    global.autoGC[chatId].closeTime = args[1]
+    global.autoGC[chatId].openTime  = args[2]
 
-    return m.reply('⚠️ تنسيق غير صحيح! استخدم:\n- auto on\n- auto off\n- auto set HH:MM HH:MM\n- auto status');
-};
+    return saveDB()
+      ? m.reply(`✅ *تم تحديث الأوقات*\n\n🔴 الإغلاق: *${args[1]}*\n🟢 الفتح:   *${args[2]}*`)
+      : m.reply('❌ فشل في الحفظ.')
+  }
 
-handler.command = ['auto'];
-handler.owner = true
+  // .auto status
+  if (sub === 'status') {
+    if (!global.autoGC[chatId]) return m.reply('⚠️ الميزة غير مفعلة في هذه المجموعة.')
+    const { enabled, closeTime, openTime, status } = global.autoGC[chatId]
+    return m.reply(
+      `📊 *حالة التحكم التلقائي*\n\n` +
+      `الحالة:    ${enabled ? '✅ مفعل' : '❌ معطل'}\n` +
+      `المجموعة: ${status === 'closed' ? '🔒 مغلقة' : '🔓 مفتوحة'}\n` +
+      `🔴 الإغلاق: *${closeTime}*\n` +
+      `🟢 الفتح:   *${openTime}*\n\n` +
+      `_التوقيت: ${timeZone}_`
+    )
+  }
+
+  return m.reply(
+    `📋 *أوامر التحكم التلقائي*\n\n` +
+    `*.auto on* — تفعيل\n` +
+    `*.auto off* — إلغاء\n` +
+    `*.auto set 22:00 10:00* — تعيين أوقات\n` +
+    `*.auto status* — عرض الحالة`
+  )
+}
+
+handler.command  = ['auto']
+handler.owner    = true
 handler.botAdmin = true
-handler.admin = true
+handler.admin    = true
 
-export default handler;
+export default handler
