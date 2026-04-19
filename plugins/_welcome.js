@@ -58,10 +58,9 @@ export async function before(m, { conn, participants, groupMetadata }) {
       i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)
     }
     ctx.closePath()
-    ctx.strokeStyle = '#FFD700'  // ⭐ لون النجمة أصفر
+    ctx.strokeStyle = '#FFD700'
     ctx.lineWidth   = 4
     ctx.stroke()
-    // ❌ لا fill - النجمة خطوط فقط
   }
 
   // ─── بناء الصورة ─────────────────────────────────────
@@ -77,7 +76,6 @@ export async function before(m, { conn, participants, groupMetadata }) {
     // منطقة الراية
     const flagY = 75, flagH = 250
 
-    // ⬛ خلفية الراية سوداء (بدل الأحمر)
     ctx.fillStyle = '#000000'
     ctx.fillRect(0, flagY, W, flagH)
 
@@ -103,7 +101,6 @@ export async function before(m, { conn, participants, groupMetadata }) {
       ctx.clip()
       ctx.drawImage(avatarImg, avatarX, avatarY, avatarSize, avatarSize)
       ctx.restore()
-      // حلقة بيضاء
       ctx.strokeStyle = '#ffffff'
       ctx.lineWidth   = 4
       ctx.beginPath()
@@ -114,7 +111,7 @@ export async function before(m, { conn, participants, groupMetadata }) {
     // ── نجمة المغرب على اليمين ──
     drawStar(ctx, W - 90, flagY + flagH / 2, 58, 23)
 
-    // ── النصوص بدعم RTL (بدون emoji) ──
+    // ── النصوص بدعم RTL ──
     ctx.direction = 'rtl'
     ctx.textAlign = 'right'
     const textX     = W - 160
@@ -200,10 +197,9 @@ export async function before(m, { conn, participants, groupMetadata }) {
       caption: welcomeText,
       mentions: [userJid]
     }, { quoted: fkontak })
-  }
 
   // ─── مغادرة عضو ──────────────────────────────────────
-  else if (
+  } else if (
     m.messageStubType === WAMessageStubType.GROUP_PARTICIPANT_LEAVE ||
     m.messageStubType === WAMessageStubType.GROUP_PARTICIPANT_REMOVE
   ) {
@@ -225,36 +221,6 @@ export async function before(m, { conn, participants, groupMetadata }) {
     await conn.sendMessage(m.chat, {
       ...(imgBuffer ? { image: imgBuffer } : {}),
       caption: byeText,
-      mentions: [userJid]
-    }, { quoted: fkontak })
-  }
-
-  return true
-}
-
-
-  // 🔴 عند مغادرة عضو
-  else if (
-    m.messageStubType === WAMessageStubType.GROUP_PARTICIPANT_LEAVE ||
-    m.messageStubType === WAMessageStubType.GROUP_PARTICIPANT_REMOVE
-  ) {
-    const memberCount = initialMemberCount - 1
-    const txtGoodbye = `💔 مغادرة عضو 💔`
-    const defaultBye = `*وداعاً @user...*
-
-😢 نتمنى لك التوفيق خارج مجموعة @subject  
-> 👥 عدد الأعضاء الآن: ${memberCount}`
-
-    const despedida = (chat.byeText || defaultBye)
-      .replace('@user', mention)
-      .replace('@subject', groupMetadata.subject)
-
-    const goodbyeApiUrl = `${apiBase}/goodbyev2?username=${username}&guildName=${guildName}&memberCount=${memberCount}&avatar=${encodeURIComponent(avatar)}&background=${backgroundUrl}`
-    let imgBuffer = await fetchImage(goodbyeApiUrl)
-
-    await conn.sendMessage(m.chat, {
-      image: imgBuffer,
-      caption: despedida,
       mentions: [userJid]
     }, { quoted: fkontak })
   }
