@@ -19,7 +19,7 @@ global.info = {
  figlet: 'silanalite', // create a start console display
  nomorwa : '212605784394',
  nameown : 'NOUREDDINE',
- nomerown : '212717457920',
+ nomerown : '201105749499',
  packname : 'sticker by ',
  author : 'SILANA AI',
  namebot : '乂 SILANA AI',
