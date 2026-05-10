@@ -15,7 +15,7 @@ let files = []
 for (let folder of folders)
     for (let file of fs.readdirSync(folder).filter(v => v.endsWith('.js')))
         files.push(path.resolve(path.join(folder, file)))
-for (let file of files) {
+for (let file of files) {+967 780 085 747
     if (file == __filename) continue
     console.error('Checking', file)
     const error = syntaxError(fs.readFileSync(file, 'utf8'), file, {
