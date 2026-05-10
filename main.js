@@ -274,11 +274,11 @@ async function connectionUpdate(update) {
     if (global.db.data == null) loadDatabase()
     if (connection === "open") {
         const deviceName = os.hostname();
-        const message = `• *معلومات*: البوت نشط\n
-◦ *المنصة*: ${os.platform()} ${os.release()}
-◦ *جهاز*: ${deviceName}
-◦ *اسم البوت*: ${global.namebot}
-◦ *الوقت المتصل*: ${new Date().toLocaleString()}\n\n قناتي على الواتساب للمزيد من المعلومات \nhttps://whatsapp.com/channel/0029VaX4b6J7DAWqt3Hhu01A`;
+        const message = `• *مـعلومـات*: البـوت نـشـط\n
+◦ *المـنصـة*: ${os.platform()} ${os.release()}
+◦ *جـهـاز*: ${deviceName}
+◦ *اسـم البـوت*: ${global.namebot}
+◦ *الـوقـت المـتصـل*: ${new Date().toLocaleString()}\n\n قـناتـي عـلى الـواتسـاب للـمزيـد مـن الـمعلـومـات \nhttps://whatsapp.com/channel/0029Vb7nYRZHAdNWqXl8ug1b`;
         
         this.sendMessage(global.nomerown + `@s.whatsapp.net`, {
             text: message
