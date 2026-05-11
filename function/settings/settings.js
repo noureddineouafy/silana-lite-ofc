@@ -9,23 +9,23 @@ Setting
 global.setting = {
  clearSesi: false, // trash cleaner sessions 
  clearTmp: true, // tmp trash cleaner
- addReply: true, // create with thumbnail in message
+ addReply: false, // create with thumbnail in message
  idgc: '120363315668824185@g.us' // id gc buat join only
  }
 
 global.info = {
- nomerbot : '212605784394',
- pairingNumber : '212605784394',
+ nomerbot : '212718891104',
+ pairingNumber : '212718891104',
  figlet: 'silanalite', // create a start console display
- nomorwa : '212605784394',
- nameown : 'NOUREDDINE',
- nomerown : '212717457920',
+ nomorwa : '212718891104',
+ nameown : 'MANON TECH',
+ nomerown : '212709138520',
  packname : 'sticker by ',
- author : 'SILANA AI',
- namebot : '乂 SILANA AI',
- wm : 'SILANA LITE.',
+ author : 'ALEXY AI',
+ namebot : '乂 ALEXY AI',
+ wm : 'ALEXY LITE.',
  stickpack : 'Whatsapp',
- stickauth : 'SILANA LITE',
+ stickauth : 'ALEXY LITE',
  jid: '@s.whatsapp.net'
 }
 
@@ -34,9 +34,9 @@ global.media = {
  ppKosong : 'https://i.ibb.co/3Fh9V6p/avatar-contact.png',
  didyou : 'https://telegra.ph/file/e40219cc8d472025f18b6.jpg',
  rulesBot : 'https://telegra.ph/file/7cd8985216ffd3c376238.jpg',
- thumbnail : 'https://files.catbox.moe/hnbuh3.jpg',
- thumb : 'https://files.catbox.moe/hnbuh3.jpg',
- logo : 'https://files.catbox.moe/hnbuh3.jpg',
+ thumbnail : '',
+ thumb : '',
+ logo : '',
  unReg : 'https://telegra.ph/file/ef02d1fdd59082d05f08d.jpg',
  registrasi : 'https://files.catbox.moe/hnbuh3.jpg',
  confess : 'https://telegra.ph/file/bfef7e33bc60dd2608ac6.jpg',
