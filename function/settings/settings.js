@@ -15,7 +15,7 @@ global.setting = {
 
 global.info = {
  nomerbot : '212605784394',
- pairingNumber : '212605784394',
+ pairingNumber : '212619190763',
  figlet: 'silanalite', // create a start console display
  nomorwa : '212605784394',
  nameown : 'NOUREDDINE',
@@ -34,7 +34,7 @@ global.media = {
  ppKosong : 'https://i.ibb.co/3Fh9V6p/avatar-contact.png',
  didyou : 'https://telegra.ph/file/e40219cc8d472025f18b6.jpg',
  rulesBot : 'https://telegra.ph/file/7cd8985216ffd3c376238.jpg',
- thumbnail : 'https://files.catbox.moe/hnbuh3.jpg',
+ thumbnai : 'https://iili.io/BP2O7g2.jpg',
  thumb : 'https://files.catbox.moe/hnbuh3.jpg',
  logo : 'https://files.catbox.moe/hnbuh3.jpg',
  unReg : 'https://telegra.ph/file/ef02d1fdd59082d05f08d.jpg',
