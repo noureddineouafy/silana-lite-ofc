@@ -17,7 +17,7 @@ global.info = {
  nomerbot : '212605784394',
  pairingNumber : '212605784394',
  figlet: 'silanalite', // create a start console display
- nomorwa : '212605784394',
+ nomorwa :
  nameown : 'NOUREDDINE',
  nomerown : '212717457920',
  packname : 'sticker by ',
